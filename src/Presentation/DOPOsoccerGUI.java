@@ -50,7 +50,7 @@ public class DOPOsoccerGUI extends JFrame {
 
     // Nombres de archivo sin extensión. Edita estas listas con los tuyos.
     private static final String[] PAISES = {"alemania", "corea", "camerun", "nigeria", "usa"};
-    private static final String[] ESTADIOS = {"alemania", "corea", "camerun", "nigeria", "usa", "millonarios_campin"};
+    private static final String[] ESTADIOS = {"alemania", "corea", "camerun", "nigeria", "usa", "bogota"};
 
     // Prefijo de las miniaturas (dentro de src)
     private static final String CARPETA_BANDERAS = "/banderas/bandera_";

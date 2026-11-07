@@ -158,6 +158,10 @@ public class Jugador {
         }
         return false;
     }
+    
+    public void moverJugador(double n) {
+    	x += n;
+    }
 
     public Rectangle getHitbox() { return hitbox; }
     public double getX() { return x; }

@@ -72,6 +72,14 @@ public class Partido {
         // Techos: rebota y no cuenta gol
         if (colisionTecho(canchaizq) || colisionTecho(canchader)) return;
 
+        
+        // entre jugadores
+        if(jugador.getHitbox().intersects(jugador2.getHitbox())) {
+        	jugador.moverJugador(-1.0);
+        }
+        if(jugador2.getHitbox().intersects(jugador.getHitbox())) {
+        	jugador2.moverJugador(1.0);
+        }
         // Goles
         if (balon.getHitbox().intersects(canchaizq.getRed())) {
             goles[1]++;

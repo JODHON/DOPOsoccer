@@ -1,24 +1,9 @@
 package Presentation;
 
-import Domain.Partido;
-import Domain.Jugador;
 import Domain.Balon;
 import Domain.Cancha;
-
-import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JToggleButton;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.Scrollable;
-import javax.swing.Timer;
+import Domain.Jugador;
+import Domain.Partido;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -44,13 +29,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JToggleButton;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.Scrollable;
+import javax.swing.Timer;
 
 public class DOPOsoccerGUI extends JFrame {
+
+    // tiempo de juego
+
+    private Timer timerJuego;
     private static final String[] ESTADOS = {"idle", "forward", "jump", "fall", "kick", "slide", "action"};
 
     // Nombres de archivo sin extensión. Edita estas listas con los tuyos.
     private static final String[] PAISES = {"alemania", "corea", "camerun", "nigeria", "usa"};
-    private static final String[] ESTADIOS = {"alemania", "corea", "camerun", "nigeria", "usa", "bogota"};
+    private static final String[] ESTADIOS = {"alemania", "corea", "camerun", "nigeria", "usa", "bogota","bogota_es_roja"};
 
     // Prefijo de las miniaturas (dentro de src)
     private static final String CARPETA_BANDERAS = "/banderas/bandera_";
@@ -189,24 +192,36 @@ public class DOPOsoccerGUI extends JFrame {
     // ---------------- PARTIDO ----------------
 
     private void iniciarPartido() {
-        partido = new Partido(pais1, pais2);
+    if (timerJuego != null) timerJuego.stop();
+    if (panel != null) contenedor.remove(panel);
 
-        imgFondo = cargarImagen("/fondos/" + estadio + ".png");
-        sprites1 = cargarSprites(pais1);
-        sprites2 = cargarSprites(pais2);
-        imgBalon = cargarImagen("/Elementos/balon.png");
-        imgCancha = cargarImagen("/Elementos/arco_derecho.png");
+    partido = new Partido(pais1, pais2);
 
-        panel = new PanelJuego();
-        contenedor.add(panel, "juego");
-        cartas.show(contenedor, "juego");
-        panel.requestFocusInWindow();
+    imgFondo=cargarImagen("/fondos/" + estadio + ".png");
+    sprites1=cargarSprites(pais1);
+    sprites2=cargarSprites(pais2);
+    imgBalon=cargarImagen("/Elementos/balon.png");
+    imgCancha=cargarImagen("/Elementos/arco_derecho.png");
 
-        new Timer(16, e -> {
-            partido.actualizarLogica();
-            panel.repaint();
-        }).start();
+    panel=new PanelJuego();
+    contenedor.add(panel,"juego");
+    cartas.show(contenedor,"juego");
+    panel.requestFocusInWindow();
+
+    timerJuego = new Timer(16, e -> {
+    try {
+        partido.actualizarLogica();
+        panel.repaint();
+        if (partido.getEstado() == Partido.Estado.TERMINADO) {
+            timerJuego.stop();
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        timerJuego.stop();
     }
+});
+timerJuego.start();
+}
 
     private Image cargarImagen(String ruta) {
         try {

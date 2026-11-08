@@ -7,8 +7,8 @@ public class Balon {
     private double xInicial;
     private double yInicial;
     private int size;
-    private Object poderActivo;
-    private Object lanzador;
+    private Poder poderActivo;
+    private Jugador lanzador;
 
     private Rectangle hitbox;
 
@@ -49,11 +49,6 @@ public class Balon {
         this.vy = fuerza * Math.sin(angulo);
     }
 
-    public void rebotarEn(Object entidad) {
-        this.vx = -this.vx * rebote;
-        this.vy = -this.vy * rebote;
-    }
-
     public void rebotarVertical(double nuevaY) {
         this.y = nuevaY;
         this.vy = -this.vy * rebote;
@@ -70,21 +65,13 @@ public class Balon {
         actualizarHitbox();
     }
 
-    public boolean tienePoderActivo() {
-        return this.poderActivo != null;
-    }
+    public boolean tienePoderActivo() { return poderActivo != null; }
+    public Poder getPoderActivo()     { return poderActivo; }
+    public Jugador getLanzador()      { return lanzador; }
 
-    public Object getLanzador() {
-        return this.lanzador;
-    }
-
-    public void activarPoder(Object poder, Object lanzador) {
+    public void activarPoder(Poder poder, Jugador lanzador) {
         this.poderActivo = poder;
         this.lanzador = lanzador;
-    }
-
-    public void devolverA(Object nuevoLanzador, double fuerza) {
-        this.lanzador = nuevoLanzador;
     }
 
     public void limpiarPoder() {

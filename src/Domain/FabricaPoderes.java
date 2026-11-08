@@ -3,11 +3,11 @@ package Domain;
 public class FabricaPoderes {
     private FabricaPoderes() {}
 
-    // Devuelve el poder del pais
     public static Poder crear(String pais) {
         switch (pais) {
             // case "alemania": return new PoderAlemania();
-            default: return null;
+            // case "corea":return new PoderCorea();
+            default: return new PoderPrueba(); // TEMPORAL: cambiar a null cuando existan todos los poderes
         }
     }
 }

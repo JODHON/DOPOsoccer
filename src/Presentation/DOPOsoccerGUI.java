@@ -80,6 +80,13 @@ public class DOPOsoccerGUI extends JFrame {
     private Image imgFondo;
     private Image imgCancha;
 
+    // aura
+
+    private static final int FRAMES_AURA = 4;
+    private static final int MS_POR_FRAME_AURA = 100; // velocidad de la animación
+
+    private Image imgAura;
+
     public DOPOsoccerGUI() {
         super("DOPOSoccer");
 
@@ -261,6 +268,7 @@ public class DOPOsoccerGUI extends JFrame {
         sprites2 = cargarSprites(pais2);
         imgBalon = cargarImagen("/Elementos/balon.png");
         imgCancha = cargarImagen("/Elementos/arco_derecho.png");
+        imgAura=cargarImagen("/Elementos/aura.png");
 
         panel = new PanelJuego();
         contenedor.add(panel, "juego");
@@ -371,6 +379,7 @@ public class DOPOsoccerGUI extends JFrame {
 
         private void dibujarJugador(Graphics2D g2, Jugador j, Map<String, Image> sprites,
                                     boolean voltear, Color colorRespaldo) {
+            dibujarAura(g2, j);
             Image img = sprites.get(j.getEstado());
             if (img == null) img = sprites.get("idle");
 
@@ -436,6 +445,20 @@ public class DOPOsoccerGUI extends JFrame {
         private void centrarTexto(Graphics2D g2, String texto, int cx, int baseY) {
             FontMetrics fm = g2.getFontMetrics();
             g2.drawString(texto, cx - fm.stringWidth(texto) / 2, baseY);
+        }
+
+        private void dibujarAura(Graphics2D g2, Jugador j) {
+            if (!j.tienePoder() || imgAura == null) return;
+
+            int frameW = imgAura.getWidth(this) / FRAMES_AURA;
+            int frameH = imgAura.getHeight(this);
+            int frame = (int) (System.currentTimeMillis() / MS_POR_FRAME_AURA % FRAMES_AURA);
+            int sx1 = frame * frameW, sx2 = sx1 + frameW;
+            int margen = 30;
+            int dx1 = (int) j.getX() - margen, dy1 = (int) j.getY() - margen;
+            int dx2 = dx1 + j.getAncho() + margen * 2, dy2 = dy1 + j.getAlto() + margen * 2;
+
+            g2.drawImage(imgAura, dx1, dy1, dx2, dy2, sx1, 0, sx2, frameH, this);
         }
     }
 

@@ -16,9 +16,9 @@ import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.KeyAdapter;
@@ -38,10 +38,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.Scrollable;
 import javax.swing.Timer;
 
 public class DOPOsoccerGUI extends JFrame {
@@ -61,6 +58,7 @@ public class DOPOsoccerGUI extends JFrame {
 
     private static final Color FONDO_MENU = new Color(20, 22, 38);
     private static final Color SELECCION = new Color(255, 200, 40);
+    private static final Color COLOR_TITULO_SECCION = new Color(180, 200, 255);
 
     private CardLayout cartas = new CardLayout();
     private JPanel contenedor = new JPanel(cartas);
@@ -68,6 +66,10 @@ public class DOPOsoccerGUI extends JFrame {
     private String pais1 = PAISES[0];
     private String pais2 = PAISES[PAISES.length > 1 ? 1 : 0];
     private String estadio = ESTADIOS[0];
+
+    // Modo de juego elegido en el menú: false = 1 vs 1, true = 1 vs CPU
+    private boolean modoCPU = false;
+    private JLabel lblJugador2;
 
     private Partido partido;
     private PanelJuego panel;
@@ -94,59 +96,117 @@ public class DOPOsoccerGUI extends JFrame {
     // ---------------- MENÚ ----------------
 
     private JPanel crearMenu() {
-        PanelDesplazable contenido = new PanelDesplazable();
-        contenido.setLayout(new BoxLayout(contenido, BoxLayout.Y_AXIS));
-        contenido.setBackground(FONDO_MENU);
-        contenido.setBorder(BorderFactory.createEmptyBorder(25, 30, 25, 30));
+        JPanel menu = new JPanel(new BorderLayout());
+        menu.setBackground(FONDO_MENU);
+        menu.setPreferredSize(new Dimension(1280, 720));
 
-        JLabel titulo = new JLabel("DOPOSOCCER");
+        // Título
+        JLabel titulo = new JLabel("DOPOSOCCER", JLabel.CENTER);
         titulo.setFont(new Font("Arial", Font.BOLD, 54));
         titulo.setForeground(Color.WHITE);
-        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        contenido.add(titulo);
-        contenido.add(Box.createVerticalStrut(20));
+        titulo.setBorder(BorderFactory.createEmptyBorder(15, 0, 5, 0));
+        menu.add(titulo, BorderLayout.NORTH);
 
-        contenido.add(crearSeccion("JUGADOR 1", PAISES, CARPETA_BANDERAS, 90, 60, 5, pais1, v -> pais1 = v));
-        contenido.add(Box.createVerticalStrut(10));
-        contenido.add(crearSeccion("JUGADOR 2", PAISES, CARPETA_BANDERAS, 90, 60, 5, pais2, v -> pais2 = v));
-        contenido.add(Box.createVerticalStrut(10));
-        contenido.add(crearSeccion("ESTADIO", ESTADIOS, CARPETA_MINIATURAS, 220, 124, 4, estadio, v -> estadio = v));
+        // Columna izquierda: jugador 1
+        JPanel izquierda = crearSeccion(crearTituloSeccion("JUGADOR 1"), PAISES, CARPETA_BANDERAS,
+                72, 48, 1, pais1, v -> pais1 = v);
+        izquierda.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 20));
+        menu.add(izquierda, BorderLayout.WEST);
 
-        JScrollPane scroll = new JScrollPane(contenido);
-        scroll.setBorder(null);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.getVerticalScrollBar().setUnitIncrement(20);
+        // Columna derecha: jugador 2 (o CPU)
+        lblJugador2 = crearTituloSeccion("JUGADOR 2");
+        JPanel derecha = crearSeccion(lblJugador2, PAISES, CARPETA_BANDERAS,
+                72, 48, 1, pais2, v -> pais2 = v);
+        derecha.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 40));
+        menu.add(derecha, BorderLayout.EAST);
+
+        // Centro: estadios (4 columnas; con 7 estadios quedan 2 filas)
+        JPanel estadios = crearSeccion(crearTituloSeccion("ESTADIO"), ESTADIOS, CARPETA_MINIATURAS,
+                190, 107, 4, estadio, v -> estadio = v);
+        JPanel centro = new JPanel(new GridBagLayout()); // centra la sección en el espacio disponible
+        centro.setOpaque(false);
+        centro.add(estadios);
+        menu.add(centro, BorderLayout.CENTER);
+
+        // Abajo: modo de juego + JUGAR
+        menu.add(crearBarraInferior(), BorderLayout.SOUTH);
+        return menu;
+    }
+
+    private JLabel crearTituloSeccion(String texto) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setFont(new Font("Arial", Font.BOLD, 20));
+        lbl.setForeground(COLOR_TITULO_SECCION);
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return lbl;
+    }
+
+    private JPanel crearBarraInferior() {
+        JPanel barra = new JPanel();
+        barra.setLayout(new BoxLayout(barra, BoxLayout.Y_AXIS));
+        barra.setOpaque(false);
+        barra.setBorder(BorderFactory.createEmptyBorder(5, 0, 15, 0));
+
+        barra.add(crearTituloSeccion("MODO DE JUEGO"));
+        barra.add(Box.createVerticalStrut(8));
+
+        JToggleButton btn1v1 = crearBotonModo("1 VS 1");
+        JToggleButton btnCpu = crearBotonModo("1 VS CPU");
+        btn1v1.setSelected(!modoCPU);
+        btnCpu.setSelected(modoCPU);
+        marcar(btn1v1);
+        marcar(btnCpu);
+
+        btn1v1.addActionListener(e -> elegirModo(false, btn1v1, btnCpu));
+        btnCpu.addActionListener(e -> elegirModo(true, btn1v1, btnCpu));
+
+        JPanel filaModos = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        filaModos.setOpaque(false);
+        filaModos.add(btn1v1);
+        filaModos.add(btnCpu);
+        barra.add(filaModos);
+        barra.add(Box.createVerticalStrut(12));
 
         JButton jugar = new JButton("JUGAR");
         jugar.setFont(new Font("Arial", Font.BOLD, 30));
         jugar.setFocusPainted(false);
+        jugar.setAlignmentX(Component.CENTER_ALIGNMENT);
         jugar.addActionListener(e -> iniciarPartido());
+        barra.add(jugar);
 
-        JPanel barraInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
-        barraInferior.setBackground(FONDO_MENU);
-        barraInferior.add(jugar);
-
-        JPanel menu = new JPanel(new BorderLayout());
-        menu.setPreferredSize(new Dimension(1280, 720));
-        menu.add(scroll, BorderLayout.CENTER);
-        menu.add(barraInferior, BorderLayout.SOUTH);
-        return menu;
+        return barra;
     }
 
-    private JPanel crearSeccion(String titulo, String[] opciones, String carpeta, int w, int h,
+    private JToggleButton crearBotonModo(String texto) {
+        JToggleButton btn = new JToggleButton(texto);
+        btn.setFont(new Font("Arial", Font.BOLD, 18));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(new Color(40, 44, 70));
+        btn.setFocusPainted(false);
+        btn.setPreferredSize(new Dimension(170, 44));
+        return btn;
+    }
+
+    private void elegirModo(boolean cpu, JToggleButton btn1v1, JToggleButton btnCpu) {
+        modoCPU = cpu;
+        btn1v1.setSelected(!cpu);
+        btnCpu.setSelected(cpu);
+        marcar(btn1v1);
+        marcar(btnCpu);
+        lblJugador2.setText(cpu ? "CPU" : "JUGADOR 2");
+    }
+
+    private JPanel crearSeccion(JLabel lbl, String[] opciones, String carpeta, int w, int h,
                                 int columnas, String inicial, Consumer<String> alElegir) {
         JPanel seccion = new JPanel();
         seccion.setLayout(new BoxLayout(seccion, BoxLayout.Y_AXIS));
         seccion.setOpaque(false);
 
-        JLabel lbl = new JLabel(titulo);
-        lbl.setFont(new Font("Arial", Font.BOLD, 20));
-        lbl.setForeground(new Color(180, 200, 255));
-        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
         seccion.add(lbl);
+        seccion.add(Box.createVerticalStrut(8));
 
-        JPanel fila = new JPanel(new GridLayout(0, columnas, 12, 12));
-        fila.setOpaque(false);
+        JPanel cuadricula = new JPanel(new GridLayout(0, columnas, 12, 8));
+        cuadricula.setOpaque(false);
 
         List<JToggleButton> botones = new ArrayList<>();
         for (String nombre : opciones) {
@@ -171,13 +231,13 @@ public class DOPOsoccerGUI extends JFrame {
             });
             marcar(btn);
             botones.add(btn);
-            fila.add(btn);
+            cuadricula.add(btn);
         }
 
-        // La envoltura centra la cuadrícula
-        JPanel envoltura = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 8));
+        // La envoltura centra la cuadrícula dentro de la sección
+        JPanel envoltura = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         envoltura.setOpaque(false);
-        envoltura.add(fila);
+        envoltura.add(cuadricula);
         seccion.add(envoltura);
         return seccion;
     }
@@ -192,36 +252,35 @@ public class DOPOsoccerGUI extends JFrame {
     // ---------------- PARTIDO ----------------
 
     private void iniciarPartido() {
-    if (timerJuego != null) timerJuego.stop();
-    if (panel != null) contenedor.remove(panel);
+        if (timerJuego != null) timerJuego.stop();
+        if (panel != null) contenedor.remove(panel);
+        partido = new Partido(pais1, pais2);
 
-    partido = new Partido(pais1, pais2);
+        imgFondo = cargarImagen("/fondos/" + estadio + ".png");
+        sprites1 = cargarSprites(pais1);
+        sprites2 = cargarSprites(pais2);
+        imgBalon = cargarImagen("/Elementos/balon.png");
+        imgCancha = cargarImagen("/Elementos/arco_derecho.png");
 
-    imgFondo=cargarImagen("/fondos/" + estadio + ".png");
-    sprites1=cargarSprites(pais1);
-    sprites2=cargarSprites(pais2);
-    imgBalon=cargarImagen("/Elementos/balon.png");
-    imgCancha=cargarImagen("/Elementos/arco_derecho.png");
+        panel = new PanelJuego();
+        contenedor.add(panel, "juego");
+        cartas.show(contenedor, "juego");
+        panel.requestFocusInWindow();
 
-    panel=new PanelJuego();
-    contenedor.add(panel,"juego");
-    cartas.show(contenedor,"juego");
-    panel.requestFocusInWindow();
-
-    timerJuego = new Timer(16, e -> {
-    try {
-        partido.actualizarLogica();
-        panel.repaint();
-        if (partido.getEstado() == Partido.Estado.TERMINADO) {
-            timerJuego.stop();
-        }
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        timerJuego.stop();
+        timerJuego = new Timer(16, e -> {
+            try {
+                partido.actualizarLogica();
+                panel.repaint();
+                if (partido.getEstado() == Partido.Estado.TERMINADO) {
+                    timerJuego.stop();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                timerJuego.stop();
+            }
+        });
+        timerJuego.start();
     }
-});
-timerJuego.start();
-}
 
     private Image cargarImagen(String ruta) {
         try {
@@ -239,15 +298,6 @@ timerJuego.start();
             mapa.put(estado, cargarImagen("/personajes/" + pais + "_" + estado + ".png"));
         }
         return mapa;
-    }
-
-    // Contenido del menú: se ajusta al ancho de la ventana y solo crece hacia abajo
-    private static class PanelDesplazable extends JPanel implements Scrollable {
-        @Override public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
-        @Override public int getScrollableUnitIncrement(Rectangle r, int orientacion, int direccion) { return 20; }
-        @Override public int getScrollableBlockIncrement(Rectangle r, int orientacion, int direccion) { return r.height; }
-        @Override public boolean getScrollableTracksViewportWidth() { return true; }
-        @Override public boolean getScrollableTracksViewportHeight() { return false; }
     }
 
     private class PanelJuego extends JPanel {
@@ -373,7 +423,7 @@ timerJuego.start();
             g2.setColor(new Color(180, 200, 255));
             centrarTexto(g2, "JUGADOR 1", x + w / 4, y + 22);
             g2.setColor(new Color(255, 190, 185));
-            centrarTexto(g2, "JUGADOR 2", x + 3 * w / 4, y + 22);
+            centrarTexto(g2, modoCPU ? "CPU" : "JUGADOR 2", x + 3 * w / 4, y + 22);
 
             // Goles
             g2.setFont(new Font("Arial", Font.BOLD, 42));

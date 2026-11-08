@@ -1,5 +1,6 @@
 package Domain;
 
+
 /** Efecto temporal sobre un jugador. Cada poder crea su propio tipo de efecto. */
 public abstract class Efecto {
     private final String nombre;

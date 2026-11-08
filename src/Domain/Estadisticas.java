@@ -9,7 +9,7 @@ public class Estadisticas {
 
     public static final int NIVEL_MAX = 10;
     public static final int MAX_MEJORAS = NIVEL_MAX - 1;
-    private static final double DAÑO_BASE_PATADA = 10;
+    private static final double DANO_BASE_PATADA = 10;
     public static final int PRECIO_INICIAL = 500;
     private static final double BONO_POR_MEJORA = 0.10;
 
@@ -27,7 +27,7 @@ public class Estadisticas {
     /** Tabla 3: 1.0 (nivel 1) ... 1.9 (nivel 10). Escala patada y tiros de poder. */
     public double getMultiplicadorKick() { return 1 + BONO_POR_MEJORA * mejoras[Stat.KICK.ordinal()]; }
     /** Daño de patada normal: 10 x multiplicadorKick (10 ... 19). */
-    public double getdañoPatada()  { return DAÑO_BASE_PATADA * getMultiplicadorKick(); }
+    public double getdanoPatada()  { return DANO_BASE_PATADA * getMultiplicadorKick(); }
     public double getFuerzaSalto()  { return escalar(BASE_JUMP, Stat.JUMP); }
     public double getVidaMaxima()   { return escalar(BASE_VIDA, Stat.SURVIVAL); }
 

@@ -5,9 +5,11 @@ public class FabricaPoderes {
 
     public static Poder crear(String pais) {
         switch (pais) {
-            // case "alemania": return new PoderAlemania();
-            // case "corea":return new PoderCorea();
-            default: return new PoderPrueba(); // TEMPORAL: cambiar a null cuando existan todos los poderes
+        	case "eeuu": return new Podereeeuu();
+        	case "corea":return new Podercorea();
+        	case "camerun":return new Podercamerun();
+        	case "nigeria":return new Podernigeria();
+            default: return new PoderPrueba(); 
         }
     }
 }

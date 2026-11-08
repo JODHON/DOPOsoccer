@@ -28,6 +28,8 @@ public class Jugador {
     private double animPatada;
     private double tiempoStun;
     private double factorVelocidad = 1.0; // modificado por efectos
+    
+    private boolean bloqueosalto;
 
     private Rectangle hitbox;
 
@@ -120,7 +122,7 @@ public class Jugador {
     }
 
     public void saltar() {
-        if (enSuelo && !estaAturdido()) {
+        if (enSuelo && !estaAturdido() && !bloqueosalto) {
             vy = -stats.getFuerzaSalto();
             enSuelo = false;
         }
@@ -137,7 +139,7 @@ public class Jugador {
         if (alcance.intersects(balon.getHitbox())) {
             balon.golpear(FUERZA_PATADA, (lado == 1) ? -Math.PI / 4 : -3 * Math.PI / 4);
         } else if (alcance.intersects(rival.getHitbox())) {
-            rival.recibirDaño(stats.getdañoPatada());
+            rival.recibirDaño(stats.getdanoPatada());
         }
     }
 
@@ -223,6 +225,21 @@ public class Jugador {
     public void moverJugador(double n) {
         x += n;
     }
+    
+    
+    public void elevar(double px) {
+        y = Math.max(0, y - px);
+        vy = 0;
+    }
+    
+    public void aturdir(double frames) {
+        tiempoStun = frames;
+        tiempoSlide = 0;
+        animPatada = 0;
+    }
+
+    
+    public void setSaltoBloqueado(boolean b) { this.bloqueosalto = b; }
 
     public Rectangle getHitbox() { return hitbox; }
     public double getX() { return x; }

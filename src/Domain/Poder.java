@@ -34,6 +34,8 @@ public abstract class Poder {
         rival.recibirDaño(daño * lanzador.getStats().getMultiplicadorKick());
         rival.aplicarEfecto(crearEfecto());
     }
+    
+
 
     public String getNombre() { return nombre; }
     public double getdaño()  { return daño; }

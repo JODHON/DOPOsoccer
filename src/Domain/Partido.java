@@ -6,8 +6,11 @@ import java.awt.event.KeyEvent;
 public class Partido {
 
     public enum Estado { JUGANDO, MUERTE_SUBITA, TERMINADO }
+    public enum Modo { TIEMPO, GOLES }
 
-    private static final long DURACION_NS = 60_000_000_000L; // 60 s
+    public static final int DURACION_DEFECTO_S = 60;
+    public static final int GOLES_DEFECTO = 5;
+
     private static final int PUNTOS_GANADOR = 100;
     private static final int PUNTOS_PERDEDOR = 25;
 
@@ -17,13 +20,37 @@ public class Partido {
     private Cancha canchaizq;
     private Cancha canchader;
 
+    private final Modo modo;
+    private final long duracionNs;
+    private final int golesObjetivo;
+
     private Estado estado = Estado.JUGANDO;
     private Jugador ganador;
     private final long inicioNs;
 
+    // Pausa: el reloj se mide con nanoTime, asi que se descuenta el tiempo pausado
+    private boolean pausado;
+    private long inicioPausaNs;
+    private long pausaAcumuladaNs;
+
     private boolean izq1, der1, izq2, der2;
 
     public Partido(String pais1, String pais2) {
+        this(pais1, pais2, Modo.TIEMPO, DURACION_DEFECTO_S);
+    }
+
+    public Partido(String pais1, String pais2, Modo modo) {
+        this(pais1, pais2, modo, modo == Modo.TIEMPO ? DURACION_DEFECTO_S : GOLES_DEFECTO);
+    }
+
+    /**
+     * @param limite segundos de juego si el modo es TIEMPO, o goles para ganar si el modo es GOLES
+     */
+    public Partido(String pais1, String pais2, Modo modo, int limite) {
+        this.modo = modo;
+        this.duracionNs = (modo == Modo.TIEMPO ? Math.max(1, limite) : DURACION_DEFECTO_S) * 1_000_000_000L;
+        this.golesObjetivo = (modo == Modo.GOLES) ? Math.max(1, limite) : GOLES_DEFECTO;
+
         this.jugador = new Jugador(200, 300, 1, pais1);
         this.jugador2 = new Jugador(880, 300, 2, pais2);
         this.balon = new Balon(600, 150, 80, 0.75);
@@ -33,24 +60,43 @@ public class Partido {
     }
 
     public void actualizarLogica() {
-        if (estado == Estado.TERMINADO) return;
+        if (estado == Estado.TERMINADO || pausado) return;
 
         jugador.actualizar(1.0);
         jugador2.actualizar(1.0);
         balon.actualizar(1.0);
         verificarColisiones();
 
-        if (estado == Estado.JUGANDO && getTiempoRestante() <= 0) {
+        // En modo GOLES no hay reloj: solo termina al llegar al objetivo
+        if (modo == Modo.TIEMPO && estado == Estado.JUGANDO && getTiempoRestante() <= 0) {
             terminarTiempo();
         }
     }
 
+    // ---------- Pausa ----------
+
+    public void pausar() {
+        if (pausado || estado == Estado.TERMINADO) return;
+        pausado = true;
+        inicioPausaNs = System.nanoTime();
+    }
+
+    public void reanudar() {
+        if (!pausado) return;
+        pausaAcumuladaNs += System.nanoTime() - inicioPausaNs;
+        pausado = false;
+    }
+
+    public boolean isPausado() { return pausado; }
+
     // ---------- Tiempo y fin de partido ----------
 
-    /** Segundos restantes (0 en muerte subita o al terminar). Medido con nanoTime, no con ticks. */
+    /** Segundos restantes (0 en muerte subita, al terminar o en modo GOLES). El tiempo en pausa no cuenta. */
     public double getTiempoRestante() {
-        if (estado != Estado.JUGANDO) return 0;
-        return Math.max(0, (DURACION_NS - (System.nanoTime() - inicioNs)) / 1e9);
+        if (modo != Modo.TIEMPO || estado != Estado.JUGANDO) return 0;
+        long ahora = pausado ? inicioPausaNs : System.nanoTime();
+        long transcurrido = ahora - inicioNs - pausaAcumuladaNs;
+        return Math.max(0, (duracionNs - transcurrido) / 1e9);
     }
 
     private void terminarTiempo() {
@@ -75,20 +121,27 @@ public class Partido {
     // ---------- Teclas ----------
 
     public void teclaPresionada(int codigo) {
+        // Movimiento: se registra siempre, para no perder teclas sostenidas al pausar
         switch (codigo) {
             case KeyEvent.VK_A: izq1 = true; break;
             case KeyEvent.VK_D: der1 = true; break;
-            case KeyEvent.VK_W: jugador.saltar(); break;
-            case KeyEvent.VK_F: jugador.patear(balon, jugador2); break;
-            case KeyEvent.VK_G: jugador.dash(); break;
-            case KeyEvent.VK_H: jugador.usarPoder(); break;
-
             case KeyEvent.VK_LEFT: izq2 = true; break;
             case KeyEvent.VK_RIGHT: der2 = true; break;
-            case KeyEvent.VK_UP: jugador2.saltar(); break;
-            case KeyEvent.VK_COMMA: jugador2.patear(balon, jugador); break;
-            case KeyEvent.VK_PERIOD: jugador2.dash(); break;
-            case KeyEvent.VK_SLASH: jugador2.usarPoder(); break;
+        }
+
+        // Acciones: solo si el juego no esta en pausa
+        if (!pausado) {
+            switch (codigo) {
+                case KeyEvent.VK_W: jugador.saltar(); break;
+                case KeyEvent.VK_F: jugador.patear(balon, jugador2); break;
+                case KeyEvent.VK_G: jugador.dash(); break;
+                case KeyEvent.VK_H: jugador.usarPoder(); break;
+
+                case KeyEvent.VK_UP: jugador2.saltar(); break;
+                case KeyEvent.VK_COMMA: jugador2.patear(balon, jugador); break;
+                case KeyEvent.VK_PERIOD: jugador2.dash(); break;
+                case KeyEvent.VK_SLASH: jugador2.usarPoder(); break;
+            }
         }
         actualizarMovimiento();
     }
@@ -180,7 +233,11 @@ public class Partido {
         receptor.recibirGol();
         balon.reiniciar(); // tambien limpia el poder del balon
 
-        if (estado == Estado.MUERTE_SUBITA) terminar(anotador);
+        if (estado == Estado.MUERTE_SUBITA) {
+            terminar(anotador);
+        } else if (modo == Modo.GOLES && anotador.getGoles() >= golesObjetivo) {
+            terminar(anotador);
+        }
     }
 
     public Jugador getJugador() { return jugador; }
@@ -190,5 +247,7 @@ public class Partido {
     public Cancha getCanchader() { return canchader; }
     public int[] getGoles() { return new int[]{ jugador.getGoles(), jugador2.getGoles() }; }
     public Estado getEstado() { return estado; }
+    public Modo getModo() { return modo; }
+    public int getGolesObjetivo() { return golesObjetivo; }
     public Jugador getGanador() { return ganador; }
 }

@@ -38,10 +38,9 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.JToggleButton;
 import javax.swing.Timer;
-
-
 
 public class DOPOsoccerGUI extends JFrame {
 
@@ -71,6 +70,18 @@ public class DOPOsoccerGUI extends JFrame {
 
     // Modo de juego elegido en el menú: false = 1 vs 1, true = 1 vs CPU
     private boolean modoCPU = false;
+
+    // Tipo de partido elegido en el menú: por tiempo o por goles
+    private Partido.Modo modoPartido = Partido.Modo.TIEMPO;
+
+    // Límite del partido: cada tipo recuerda su último valor elegido en el slider
+    private static final int MIN_TIEMPO_S = 30, MAX_TIEMPO_S = 300, PASO_TIEMPO_S = 10;
+    private static final int MIN_GOLES = 1, MAX_GOLES = 15;
+    private int duracionSegundos = Partido.DURACION_DEFECTO_S;
+    private int golesObjetivo = Partido.GOLES_DEFECTO;
+    private JSlider sliderLimite;
+    private JLabel lblLimite;
+    private boolean ajustandoSlider = false;
     private JLabel lblJugador2;
 
     private Partido partido;
@@ -82,13 +93,6 @@ public class DOPOsoccerGUI extends JFrame {
     private Image imgBalon;
     private Image imgFondo;
     private Image imgCancha;
-
-    // aura
-
-    private static final int FRAMES_AURA = 4;
-    private static final int MS_POR_FRAME_AURA = 100; // velocidad de la animación
-
-    private Image imgAura;
 
     public DOPOsoccerGUI() {
         super("DOPOSoccer");
@@ -112,21 +116,21 @@ public class DOPOsoccerGUI extends JFrame {
 
         // Título
         JLabel titulo = new JLabel("DOPOSOCCER", JLabel.CENTER);
-        titulo.setFont(new Font("Arial", Font.BOLD, 54));
+        titulo.setFont(new Font("Arial", Font.BOLD, 46));
         titulo.setForeground(Color.WHITE);
         titulo.setBorder(BorderFactory.createEmptyBorder(15, 0, 5, 0));
         menu.add(titulo, BorderLayout.NORTH);
 
         // Columna izquierda: jugador 1
         JPanel izquierda = crearSeccion(crearTituloSeccion("JUGADOR 1"), PAISES, CARPETA_BANDERAS,
-                72, 48, 1, pais1, v -> pais1 = v);
+                60, 40, 1, pais1, v -> pais1 = v);
         izquierda.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 20));
         menu.add(izquierda, BorderLayout.WEST);
 
         // Columna derecha: jugador 2 (o CPU)
         lblJugador2 = crearTituloSeccion("JUGADOR 2");
         JPanel derecha = crearSeccion(lblJugador2, PAISES, CARPETA_BANDERAS,
-                72, 48, 1, pais2, v -> pais2 = v);
+                60, 40, 1, pais2, v -> pais2 = v);
         derecha.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 40));
         menu.add(derecha, BorderLayout.EAST);
 
@@ -157,25 +161,47 @@ public class DOPOsoccerGUI extends JFrame {
         barra.setOpaque(false);
         barra.setBorder(BorderFactory.createEmptyBorder(5, 0, 15, 0));
 
-        barra.add(crearTituloSeccion("MODO DE JUEGO"));
-        barra.add(Box.createVerticalStrut(8));
+        // Las dos opciones van lado a lado, alineadas arriba
+        JPanel opciones = new JPanel();
+        opciones.setLayout(new BoxLayout(opciones, BoxLayout.X_AXIS));
+        opciones.setOpaque(false);
 
+        // Modo de juego
         JToggleButton btn1v1 = crearBotonModo("1 VS 1");
         JToggleButton btnCpu = crearBotonModo("1 VS CPU");
         btn1v1.setSelected(!modoCPU);
         btnCpu.setSelected(modoCPU);
         marcar(btn1v1);
         marcar(btnCpu);
-
         btn1v1.addActionListener(e -> elegirModo(false, btn1v1, btnCpu));
         btnCpu.addActionListener(e -> elegirModo(true, btn1v1, btnCpu));
+        JPanel grupoModo = crearGrupoOpciones("MODO DE JUEGO", btn1v1, btnCpu);
 
-        JPanel filaModos = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        filaModos.setOpaque(false);
-        filaModos.add(btn1v1);
-        filaModos.add(btnCpu);
-        barra.add(filaModos);
-        barra.add(Box.createVerticalStrut(12));
+        // Tipo de partido + slider del límite
+        JToggleButton btnTiempo = crearBotonModo("POR TIEMPO");
+        JToggleButton btnGoles = crearBotonModo("POR GOLES");
+        btnTiempo.setToolTipText("Gana quien tenga más goles al acabar el tiempo; si empatan, muerte súbita");
+        btnGoles.setToolTipText("Gana el primero en llegar al número de goles elegido");
+        btnTiempo.setSelected(modoPartido == Partido.Modo.TIEMPO);
+        btnGoles.setSelected(modoPartido == Partido.Modo.GOLES);
+        marcar(btnTiempo);
+        marcar(btnGoles);
+        btnTiempo.addActionListener(e -> elegirTipoPartido(Partido.Modo.TIEMPO, btnTiempo, btnGoles));
+        btnGoles.addActionListener(e -> elegirTipoPartido(Partido.Modo.GOLES, btnTiempo, btnGoles));
+        JPanel grupoTipo = crearGrupoOpciones("TIPO DE PARTIDO", btnTiempo, btnGoles);
+        grupoTipo.add(Box.createVerticalStrut(6));
+        grupoTipo.add(crearFilaSlider());
+
+        grupoModo.setAlignmentY(Component.TOP_ALIGNMENT);
+        grupoTipo.setAlignmentY(Component.TOP_ALIGNMENT);
+        opciones.add(Box.createHorizontalGlue());
+        opciones.add(grupoModo);
+        opciones.add(Box.createHorizontalStrut(80));
+        opciones.add(grupoTipo);
+        opciones.add(Box.createHorizontalGlue());
+
+        barra.add(opciones);
+        barra.add(Box.createVerticalStrut(10));
 
         JButton jugar = new JButton("JUGAR");
         jugar.setFont(new Font("Arial", Font.BOLD, 30));
@@ -185,6 +211,77 @@ public class DOPOsoccerGUI extends JFrame {
         barra.add(jugar);
 
         return barra;
+    }
+
+    // Título + dos botones de opción en una fila
+    private JPanel crearGrupoOpciones(String titulo, JToggleButton a, JToggleButton b) {
+        JPanel grupo = new JPanel();
+        grupo.setLayout(new BoxLayout(grupo, BoxLayout.Y_AXIS));
+        grupo.setOpaque(false);
+
+        grupo.add(crearTituloSeccion(titulo));
+        grupo.add(Box.createVerticalStrut(8));
+
+        JPanel fila = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        fila.setOpaque(false);
+        fila.add(a);
+        fila.add(b);
+        grupo.add(fila);
+        return grupo;
+    }
+
+    // Slider que fija los segundos (por tiempo) o los goles (por goles)
+    private JPanel crearFilaSlider() {
+        sliderLimite = new JSlider();
+        sliderLimite.setOpaque(false);
+        sliderLimite.setFocusable(false);
+        sliderLimite.setPreferredSize(new Dimension(250, 28));
+
+        lblLimite = new JLabel();
+        lblLimite.setFont(new Font("Arial", Font.BOLD, 16));
+        lblLimite.setForeground(Color.WHITE);
+        lblLimite.setPreferredSize(new Dimension(90, 24)); // ancho fijo para que no salte el diseño
+
+        sliderLimite.addChangeListener(e -> {
+            if (ajustandoSlider) return;
+            if (modoPartido == Partido.Modo.TIEMPO) {
+                duracionSegundos = sliderLimite.getValue() * PASO_TIEMPO_S;
+            } else {
+                golesObjetivo = sliderLimite.getValue();
+            }
+            actualizarEtiquetaLimite();
+        });
+        configurarSlider();
+
+        JPanel fila = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        fila.setOpaque(false);
+        fila.add(sliderLimite);
+        fila.add(lblLimite);
+        return fila;
+    }
+
+    // Ajusta rango y valor del slider según el tipo de partido
+    private void configurarSlider() {
+        ajustandoSlider = true;
+        if (modoPartido == Partido.Modo.TIEMPO) {
+            sliderLimite.setMinimum(MIN_TIEMPO_S / PASO_TIEMPO_S);
+            sliderLimite.setMaximum(MAX_TIEMPO_S / PASO_TIEMPO_S);
+            sliderLimite.setValue(duracionSegundos / PASO_TIEMPO_S);
+        } else {
+            sliderLimite.setMinimum(MIN_GOLES);
+            sliderLimite.setMaximum(MAX_GOLES);
+            sliderLimite.setValue(golesObjetivo);
+        }
+        ajustandoSlider = false;
+        actualizarEtiquetaLimite();
+    }
+
+    private void actualizarEtiquetaLimite() {
+        if (modoPartido == Partido.Modo.TIEMPO) {
+            lblLimite.setText(String.format("%d:%02d min", duracionSegundos / 60, duracionSegundos % 60));
+        } else {
+            lblLimite.setText(golesObjetivo + (golesObjetivo == 1 ? " GOL" : " GOLES"));
+        }
     }
 
     private JToggleButton crearBotonModo(String texto) {
@@ -204,6 +301,15 @@ public class DOPOsoccerGUI extends JFrame {
         marcar(btn1v1);
         marcar(btnCpu);
         lblJugador2.setText(cpu ? "CPU" : "JUGADOR 2");
+    }
+
+    private void elegirTipoPartido(Partido.Modo modo, JToggleButton btnTiempo, JToggleButton btnGoles) {
+        modoPartido = modo;
+        btnTiempo.setSelected(modo == Partido.Modo.TIEMPO);
+        btnGoles.setSelected(modo == Partido.Modo.GOLES);
+        marcar(btnTiempo);
+        marcar(btnGoles);
+        configurarSlider();
     }
 
     private JPanel crearSeccion(JLabel lbl, String[] opciones, String carpeta, int w, int h,
@@ -266,14 +372,14 @@ public class DOPOsoccerGUI extends JFrame {
         if (panel != null) contenedor.remove(panel);
 
         // TODO: cuando exista la lógica de CPU, pasar 'modoCPU' al Partido
-        partido = new Partido(pais1, pais2);
+        int limite = (modoPartido == Partido.Modo.TIEMPO) ? duracionSegundos : golesObjetivo;
+        partido = new Partido(pais1, pais2, modoPartido, limite);
 
         imgFondo = cargarImagen("/fondos/" + estadio + ".png");
         sprites1 = cargarSprites(pais1);
         sprites2 = cargarSprites(pais2);
         imgBalon = cargarImagen("/Elementos/balon.png");
         imgCancha = cargarImagen("/Elementos/arco_derecho.png");
-        imgAura=cargarImagen("/Elementos/aura.png");
 
         panel = new PanelJuego();
         contenedor.add(panel, "juego");
@@ -372,6 +478,13 @@ public class DOPOsoccerGUI extends JFrame {
         contenedor.repaint();
     }
 
+    // Pausa / reanudar (teclas P o ESC, o botones del menú de pausa)
+    private void alternarPausa() {
+        if (partido == null || panel == null || partido.getEstado() == Partido.Estado.TERMINADO) return;
+        if (partido.isPausado()) partido.reanudar(); else partido.pausar();
+        panel.mostrarPausa(partido.isPausado());
+    }
+
     private Image cargarImagen(String ruta) {
         try {
             return ImageIO.read(getClass().getResource(ruta));
@@ -391,6 +504,9 @@ public class DOPOsoccerGUI extends JFrame {
     }
 
     private class PanelJuego extends JPanel {
+        private JPanel panelPausa;
+        private boolean teclaPausaSostenida;
+
         PanelJuego() {
             setPreferredSize(new Dimension(1280, 720));
             setFocusable(true);
@@ -398,14 +514,82 @@ public class DOPOsoccerGUI extends JFrame {
             addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
-                    partido.teclaPresionada(e.getKeyCode());
+                    int c = e.getKeyCode();
+                    if (c == KeyEvent.VK_ESCAPE || c == KeyEvent.VK_P) {
+                        if (!teclaPausaSostenida) alternarPausa(); // evita repetir mientras se mantiene
+                        teclaPausaSostenida = true;
+                    } else {
+                        partido.teclaPresionada(c);
+                    }
                 }
 
                 @Override
                 public void keyReleased(KeyEvent e) {
-                    partido.teclaLiberada(e.getKeyCode());
+                    int c = e.getKeyCode();
+                    if (c == KeyEvent.VK_ESCAPE || c == KeyEvent.VK_P) {
+                        teclaPausaSostenida = false;
+                    } else {
+                        partido.teclaLiberada(c);
+                    }
                 }
             });
+
+            // Menú de pausa centrado, oculto hasta que se pausa
+            setLayout(new GridBagLayout());
+            panelPausa = crearPanelPausa();
+            panelPausa.setVisible(false);
+            add(panelPausa);
+        }
+
+        void mostrarPausa(boolean pausado) {
+            panelPausa.setVisible(pausado);
+            requestFocusInWindow();
+            revalidate();
+            repaint();
+        }
+
+        private JPanel crearPanelPausa() {
+            JPanel p = new JPanel();
+            p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+            p.setOpaque(false);
+
+            JLabel titulo = new JLabel("PAUSA");
+            titulo.setFont(new Font("Arial", Font.BOLD, 64));
+            titulo.setForeground(Color.WHITE);
+            titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+            p.add(titulo);
+            p.add(Box.createVerticalStrut(8));
+
+            JLabel ayuda = new JLabel("ESC o P para continuar");
+            ayuda.setFont(new Font("Arial", Font.PLAIN, 16));
+            ayuda.setForeground(COLOR_TITULO_SECCION);
+            ayuda.setAlignmentX(Component.CENTER_ALIGNMENT);
+            p.add(ayuda);
+            p.add(Box.createVerticalStrut(30));
+
+            JButton reanudar = crearBotonPausa("REANUDAR");
+            reanudar.addActionListener(e -> alternarPausa());
+            p.add(reanudar);
+            p.add(Box.createVerticalStrut(14));
+
+            JButton menuPrincipal = crearBotonPausa("VOLVER AL MENÚ");
+            menuPrincipal.addActionListener(e -> {
+                if (timerJuego != null) timerJuego.stop();
+                cartas.show(contenedor, "menu");
+            });
+            p.add(menuPrincipal);
+            return p;
+        }
+
+        private JButton crearBotonPausa(String texto) {
+            JButton b = new JButton(texto);
+            b.setFont(new Font("Arial", Font.BOLD, 26));
+            b.setFocusable(false); // así el panel conserva el foco y ESC/P siguen funcionando
+            b.setAlignmentX(Component.CENTER_ALIGNMENT);
+            Dimension d = new Dimension(320, 52);
+            b.setPreferredSize(d);
+            b.setMaximumSize(d);
+            return b;
         }
 
         @Override
@@ -460,11 +644,19 @@ public class DOPOsoccerGUI extends JFrame {
             dibujarTiempo(g2);
             dibujarBarraPoder(g2, partido.getJugador(), 30, 30, new Color(33, 150, 243));
             dibujarBarraPoder(g2, partido.getJugador2(), getWidth() - 30 - 240, 30, new Color(244, 67, 54));
+
+            if (partido.isPausado()) {
+                g2.setColor(new Color(0, 0, 0, 160));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+            } else {
+                g2.setFont(new Font("Arial", Font.PLAIN, 12));
+                g2.setColor(new Color(255, 255, 255, 170));
+                centrarTexto(g2, "P / ESC: pausa", getWidth() / 2, getHeight() - 8);
+            }
         }
 
         private void dibujarJugador(Graphics2D g2, Jugador j, Map<String, Image> sprites,
                                     boolean voltear, Color colorRespaldo) {
-            dibujarAura(g2, j);
             Image img = sprites.get(j.getEstado());
             if (img == null) img = sprites.get("idle");
 
@@ -532,11 +724,14 @@ public class DOPOsoccerGUI extends JFrame {
             boolean muerteSubita = partido.getEstado() == Partido.Estado.MUERTE_SUBITA;
             int segundos = (int) Math.ceil(partido.getTiempoRestante());
 
-            String texto = muerteSubita
-                    ? "MUERTE SÚBITA"
-                    : String.format("%d:%02d", segundos / 60, segundos % 60);
+            boolean porGoles = partido.getModo() == Partido.Modo.GOLES;
 
-            int w = muerteSubita ? 220 : 120, h = 36;
+            String texto;
+            if (porGoles) texto = "PRIMERO A " + partido.getGolesObjetivo() + " GOLES";
+            else if (muerteSubita) texto = "MUERTE SÚBITA";
+            else texto = String.format("%d:%02d", segundos / 60, segundos % 60);
+
+            int w = porGoles ? 260 : (muerteSubita ? 220 : 120), h = 36;
             int x = (getWidth() - w) / 2, y = 98;
 
             g2.setColor(new Color(10, 10, 22, 220));
@@ -546,8 +741,8 @@ public class DOPOsoccerGUI extends JFrame {
             g2.drawRoundRect(x, y, w, h, 20, 20);
             g2.setStroke(new BasicStroke(1f));
 
-            boolean urgente = muerteSubita || (partido.getEstado() == Partido.Estado.JUGANDO && segundos <= 10);
-            g2.setFont(new Font("Arial", Font.BOLD, muerteSubita ? 20 : 24));
+            boolean urgente = !porGoles && (muerteSubita || (partido.getEstado() == Partido.Estado.JUGANDO && segundos <= 10));
+            g2.setFont(new Font("Arial", Font.BOLD, (porGoles || muerteSubita) ? 20 : 24));
             g2.setColor(urgente ? new Color(255, 90, 80) : Color.WHITE);
             centrarTexto(g2, texto, x + w / 2, y + 26);
         }
@@ -575,7 +770,7 @@ public class DOPOsoccerGUI extends JFrame {
             // Texto
             String texto;
             if (j.tienePoder()) texto = "PODER ACTIVO";
-            else if (listo) texto = "¡PODER 100%!";
+            else if (listo) texto = "¡PODER LISTO!";
             else texto = "PODER " + (int) carga + "%";
 
             g2.setFont(new Font("Arial", Font.BOLD, 14));
@@ -588,20 +783,6 @@ public class DOPOsoccerGUI extends JFrame {
             g2.drawString(texto, cx - fm.stringWidth(texto) / 2, baseY);
         }
     }
-
-    private void dibujarAura(Graphics2D g2, Jugador j) {
-            if (!j.tienePoder() || imgAura == null) return;
-
-            int frameW = imgAura.getWidth(this) / FRAMES_AURA;
-            int frameH = imgAura.getHeight(this);
-            int frame = (int) (System.currentTimeMillis() / MS_POR_FRAME_AURA % FRAMES_AURA);
-            int sx1 = frame * frameW, sx2 = sx1 + frameW;
-            int margen = 30;
-            int dx1 = (int) j.getX() - margen, dy1 = (int) j.getY() - margen;
-            int dx2 = dx1 + j.getAncho() + margen * 2, dy2 = dy1 + j.getAlto() + margen * 2;
-
-            g2.drawImage(imgAura, dx1, dy1, dx2, dy2, sx1, 0, sx2, frameH, this);
-        }
 
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(DOPOsoccerGUI::new);

@@ -41,6 +41,8 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.Timer;
 
+
+
 public class DOPOsoccerGUI extends JFrame {
 
     // tiempo de juego
@@ -73,6 +75,7 @@ public class DOPOsoccerGUI extends JFrame {
 
     private Partido partido;
     private PanelJuego panel;
+    private JPanel panelFin;
 
     private Map<String, Image> sprites1;
     private Map<String, Image> sprites2;
@@ -261,6 +264,8 @@ public class DOPOsoccerGUI extends JFrame {
     private void iniciarPartido() {
         if (timerJuego != null) timerJuego.stop();
         if (panel != null) contenedor.remove(panel);
+
+        // TODO: cuando exista la lógica de CPU, pasar 'modoCPU' al Partido
         partido = new Partido(pais1, pais2);
 
         imgFondo = cargarImagen("/fondos/" + estadio + ".png");
@@ -281,6 +286,7 @@ public class DOPOsoccerGUI extends JFrame {
                 panel.repaint();
                 if (partido.getEstado() == Partido.Estado.TERMINADO) {
                     timerJuego.stop();
+                    mostrarPantallaFin();
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -288,6 +294,82 @@ public class DOPOsoccerGUI extends JFrame {
             }
         });
         timerJuego.start();
+    }
+
+    // ---------------- PANTALLA FINAL ----------------
+
+    private void mostrarPantallaFin() {
+        int[] goles = partido.getGoles();
+        String nombre1 = "JUGADOR 1";
+        String nombre2 = modoCPU ? "CPU" : "JUGADOR 2";
+
+        String resultado;
+        String paisGanador = null;
+        Jugador ganador = partido.getGanador();
+        if (ganador == partido.getJugador()) {
+            resultado = "¡GANA " + nombre1 + "!";
+            paisGanador = pais1;
+        } else if (ganador == partido.getJugador2()) {
+            resultado = "¡GANA " + nombre2 + "!";
+            paisGanador = pais2;
+        } else {
+            resultado = "¡EMPATE!"; // no debería ocurrir: el empate se resuelve en muerte súbita
+        }
+
+        JPanel fin = new JPanel();
+        fin.setLayout(new BoxLayout(fin, BoxLayout.Y_AXIS));
+        fin.setBackground(FONDO_MENU);
+        fin.setPreferredSize(new Dimension(1280, 720));
+
+        fin.add(Box.createVerticalGlue());
+
+        JLabel titulo = new JLabel("FIN DEL JUEGO");
+        titulo.setFont(new Font("Arial", Font.BOLD, 54));
+        titulo.setForeground(Color.WHITE);
+        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fin.add(titulo);
+        fin.add(Box.createVerticalStrut(30));
+
+        // Bandera del ganador (si hay ganador)
+        if (paisGanador != null) {
+            Image bandera = cargarImagen(CARPETA_BANDERAS + paisGanador + ".png");
+            if (bandera != null) {
+                JLabel lblBandera = new JLabel(new ImageIcon(bandera.getScaledInstance(150, 100, Image.SCALE_SMOOTH)));
+                lblBandera.setAlignmentX(Component.CENTER_ALIGNMENT);
+                fin.add(lblBandera);
+                fin.add(Box.createVerticalStrut(20));
+            }
+        }
+
+        JLabel lblResultado = new JLabel(resultado);
+        lblResultado.setFont(new Font("Arial", Font.BOLD, 40));
+        lblResultado.setForeground(SELECCION);
+        lblResultado.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fin.add(lblResultado);
+        fin.add(Box.createVerticalStrut(15));
+
+        JLabel lblMarcador = new JLabel(nombre1 + "  " + goles[0] + " - " + goles[1] + "  " + nombre2);
+        lblMarcador.setFont(new Font("Arial", Font.BOLD, 28));
+        lblMarcador.setForeground(COLOR_TITULO_SECCION);
+        lblMarcador.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fin.add(lblMarcador);
+        fin.add(Box.createVerticalStrut(40));
+
+        JButton volver = new JButton("VOLVER AL MENÚ");
+        volver.setFont(new Font("Arial", Font.BOLD, 28));
+        volver.setFocusPainted(false);
+        volver.setAlignmentX(Component.CENTER_ALIGNMENT);
+        volver.addActionListener(e -> cartas.show(contenedor, "menu"));
+        fin.add(volver);
+
+        fin.add(Box.createVerticalGlue());
+
+        if (panelFin != null) contenedor.remove(panelFin);
+        panelFin = fin;
+        contenedor.add(panelFin, "fin");
+        cartas.show(contenedor, "fin");
+        contenedor.revalidate();
+        contenedor.repaint();
     }
 
     private Image cargarImagen(String ruta) {
@@ -375,6 +457,9 @@ public class DOPOsoccerGUI extends JFrame {
             }
 
             dibujarMarcador(g2);
+            dibujarTiempo(g2);
+            dibujarBarraPoder(g2, partido.getJugador(), 30, 30, new Color(33, 150, 243));
+            dibujarBarraPoder(g2, partido.getJugador2(), getWidth() - 30 - 240, 30, new Color(244, 67, 54));
         }
 
         private void dibujarJugador(Graphics2D g2, Jugador j, Map<String, Image> sprites,
@@ -442,12 +527,69 @@ public class DOPOsoccerGUI extends JFrame {
             centrarTexto(g2, String.valueOf(goles[1]), x + 3 * w / 4, y + 64);
         }
 
+        // Contador de tiempo debajo del marcador (o aviso de muerte súbita)
+        private void dibujarTiempo(Graphics2D g2) {
+            boolean muerteSubita = partido.getEstado() == Partido.Estado.MUERTE_SUBITA;
+            int segundos = (int) Math.ceil(partido.getTiempoRestante());
+
+            String texto = muerteSubita
+                    ? "MUERTE SÚBITA"
+                    : String.format("%d:%02d", segundos / 60, segundos % 60);
+
+            int w = muerteSubita ? 220 : 120, h = 36;
+            int x = (getWidth() - w) / 2, y = 98;
+
+            g2.setColor(new Color(10, 10, 22, 220));
+            g2.fillRoundRect(x, y, w, h, 20, 20);
+            g2.setColor(new Color(255, 255, 255, 120));
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawRoundRect(x, y, w, h, 20, 20);
+            g2.setStroke(new BasicStroke(1f));
+
+            boolean urgente = muerteSubita || (partido.getEstado() == Partido.Estado.JUGANDO && segundos <= 10);
+            g2.setFont(new Font("Arial", Font.BOLD, muerteSubita ? 20 : 24));
+            g2.setColor(urgente ? new Color(255, 90, 80) : Color.WHITE);
+            centrarTexto(g2, texto, x + w / 2, y + 26);
+        }
+
+        // Barra de carga del poder de un jugador, con porcentaje
+        private void dibujarBarraPoder(Graphics2D g2, Jugador j, int x, int y, Color colorCarga) {
+            int w = 240, h = 24;
+            double carga = Math.max(0, Math.min(100, j.getCargaPoder()));
+            boolean listo = carga >= 100;
+
+            // Fondo
+            g2.setColor(new Color(10, 10, 22, 220));
+            g2.fillRoundRect(x, y, w, h, 14, 14);
+
+            // Relleno
+            g2.setColor(listo ? SELECCION : colorCarga);
+            g2.fillRoundRect(x, y, (int) (w * carga / 100.0), h, 14, 14);
+
+            // Borde
+            g2.setColor(new Color(255, 255, 255, 150));
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawRoundRect(x, y, w, h, 14, 14);
+            g2.setStroke(new BasicStroke(1f));
+
+            // Texto
+            String texto;
+            if (j.tienePoder()) texto = "PODER ACTIVO";
+            else if (listo) texto = "¡PODER 100%!";
+            else texto = "PODER " + (int) carga + "%";
+
+            g2.setFont(new Font("Arial", Font.BOLD, 14));
+            g2.setColor(listo && !j.tienePoder() ? Color.BLACK : Color.WHITE);
+            centrarTexto(g2, texto, x + w / 2, y + 17);
+        }
+
         private void centrarTexto(Graphics2D g2, String texto, int cx, int baseY) {
             FontMetrics fm = g2.getFontMetrics();
             g2.drawString(texto, cx - fm.stringWidth(texto) / 2, baseY);
         }
+    }
 
-        private void dibujarAura(Graphics2D g2, Jugador j) {
+    private void dibujarAura(Graphics2D g2, Jugador j) {
             if (!j.tienePoder() || imgAura == null) return;
 
             int frameW = imgAura.getWidth(this) / FRAMES_AURA;
@@ -460,7 +602,6 @@ public class DOPOsoccerGUI extends JFrame {
 
             g2.drawImage(imgAura, dx1, dy1, dx2, dy2, sx1, 0, sx2, frameH, this);
         }
-    }
 
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(DOPOsoccerGUI::new);

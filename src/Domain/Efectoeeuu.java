@@ -1,34 +1,37 @@
 package Domain;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/** Ilusion: al impactar, aparecen 7 balones falsos alrededor del rival. */
+/**
+ * Ilusion (EEUU): el balon se divide en 8 identicos (1 real + 7 falsos) durante 2.5 s.
+ * Los falsos desaparecen cuando termina el efecto.
+ */
 public class Efectoeeuu extends Efecto {
     private static final int CANTIDAD = 7;
-    private static final double VELOCIDAD = 10.0;
 
-    private Jugador jugador;
-    private List<Balonfalso> falsos;
-    private boolean lanzados = false;
+    private final List<Balonfalso> falsos = new ArrayList<>();
+    private Balon real;
+    private boolean creados = false;
 
-    public Efectoeeuu() { super("Ilusión", 120); }
+    public Efectoeeuu() { super("Ilusión", 150); } // 2.5 s a 60 fps
 
-    @Override public void aplicar(Jugador j) { jugador = j; }
-    @Override public void quitar(Jugador j)  { }
-
-   // @Override public void conectarFalsos(List<Balonfalso> falsos) { this.falsos = falsos; }
+    @Override public void alImpactar(Balon real) { this.real = real; }
+    @Override public void aplicar(Jugador j) { }
+    @Override public void quitar(Jugador j)  { falsos.clear(); }
 
     @Override public void actualizar(double dt) {
-        super.actualizar(dt); // mantiene el conteo de duracion (sin esto el efecto nunca expira)
-        if (lanzados || falsos == null) return;
-        lanzados = true; // una sola vez, no 7 por frame
-
-        double cx = jugador.getX() + jugador.getAncho() / 2.0 - 40; // 40 = mitad del balon (80)
-        double cy = jugador.getY();
-        for (int i = 0; i < CANTIDAD; i++) {
-            // abanico hacia arriba: de -170 a -10 grados
-            double angulo = -Math.PI + 0.3 + i * (Math.PI - 0.6) / (CANTIDAD - 1);
-            falsos.add(new Balonfalso(cx, cy, 80, 0.75, VELOCIDAD, angulo));
+        super.actualizar(dt);
+        // Los falsos se crean en el frame siguiente al impacto, cuando el real ya salio rebotado:
+        // asi copian su velocidad y se ven iguales.
+        if (!creados && real != null) {
+            creados = true;
+            if (real.getVx() != 0 || real.getVy() != 0) {
+                falsos.addAll(Balonfalso.abanico(real, CANTIDAD));
+            }
         }
+        for (Balonfalso f : falsos) f.actualizar(dt);
     }
+
+    @Override public List<Balonfalso> getFalsos() { return falsos; }
 }

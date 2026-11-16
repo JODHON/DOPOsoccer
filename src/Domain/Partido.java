@@ -2,6 +2,8 @@ package Domain;
 
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Partido {
 
@@ -196,7 +198,7 @@ public class Partido {
         if (!balon.tienePoderActivo() || balon.getLanzador() == rival) return;
         if (!balon.getHitbox().intersects(rival.getHitbox())) return;
 
-        balon.getPoderActivo().aplicarImpacto(rival, balon.getLanzador());
+        balon.getPoderActivo().aplicarImpacto(rival, balon.getLanzador(), balon);
         balon.limpiarPoder();
     }
 
@@ -232,11 +234,27 @@ public class Partido {
         anotador.sumarGol();
         receptor.recibirGol();
         balon.reiniciar(); // tambien limpia el poder del balon
+        limpiarFalsos();
 
         if (estado == Estado.MUERTE_SUBITA) {
             terminar(anotador);
         } else if (modo == Modo.GOLES && anotador.getGoles() >= golesObjetivo) {
             terminar(anotador);
+        }
+    }
+
+    /** Balones falsos que mantienen en juego los efectos activos de ambos jugadores (Ilusion). */
+    public List<Balonfalso> getBalonesFalsos() {
+        List<Balonfalso> todos = new ArrayList<>();
+        for (Jugador j : new Jugador[] { jugador, jugador2 }) {
+            if (j.getEfectoActivo() != null) todos.addAll(j.getEfectoActivo().getFalsos());
+        }
+        return todos;
+    }
+
+    private void limpiarFalsos() {
+        for (Jugador j : new Jugador[] { jugador, jugador2 }) {
+            if (j.getEfectoActivo() != null) j.getEfectoActivo().getFalsos().clear();
         }
     }
 

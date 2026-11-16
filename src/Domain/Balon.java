@@ -91,4 +91,6 @@ public class Balon {
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return size; }
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
 }

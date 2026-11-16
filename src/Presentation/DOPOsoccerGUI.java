@@ -91,6 +91,7 @@ public class DOPOsoccerGUI extends JFrame {
     private Map<String, Image> sprites1;
     private Map<String, Image> sprites2;
     private Image imgBalon;
+    private Image imgAura;
     private Image imgFondo;
     private Image imgCancha;
 
@@ -379,6 +380,7 @@ public class DOPOsoccerGUI extends JFrame {
         sprites1 = cargarSprites(pais1);
         sprites2 = cargarSprites(pais2);
         imgBalon = cargarImagen("/Elementos/balon.png");
+        imgAura = cargarImagen("/Elementos/aura.png");
         imgCancha = cargarImagen("/Elementos/arco_derecho.png");
 
         panel = new PanelJuego();
@@ -609,6 +611,13 @@ public class DOPOsoccerGUI extends JFrame {
             dibujarJugador(g2, partido.getJugador(), sprites1, false, Color.BLUE);
             dibujarJugador(g2, partido.getJugador2(), sprites2, true, Color.RED);
 
+            // Ilusion (EEUU): los balones falsos se dibujan igual que el real
+            if (imgBalon != null) {
+                for (Balon f : partido.getBalonesFalsos()) {
+                    g2.drawImage(imgBalon, (int) f.getX(), (int) f.getY(), f.getSize(), f.getSize(), this);
+                }
+            }
+
             Balon b = partido.getBalon();
             if (imgBalon != null) {
                 g2.drawImage(imgBalon, (int) b.getX(), (int) b.getY(), b.getSize(), b.getSize(), this);
@@ -657,6 +666,19 @@ public class DOPOsoccerGUI extends JFrame {
 
         private void dibujarJugador(Graphics2D g2, Jugador j, Map<String, Image> sprites,
                                     boolean voltear, Color colorRespaldo) {
+            // Aura animada (4 frames en horizontal) detras del jugador mientras tiene el poder activo
+            if (j.tienePoder() && imgAura != null) {
+                int frames = 4;
+                int fw = imgAura.getWidth(this) / frames;
+                int fh = imgAura.getHeight(this);
+                int f = (int) ((System.currentTimeMillis() / 100) % frames);
+                int w = (int) (j.getAncho() * 1.4);
+                int h = (int) (j.getAlto() * 1.2);
+                int ax = (int) j.getX() + (j.getAncho() - w) / 2;
+                int ay = (int) j.getY() + j.getAlto() - h;
+                g2.drawImage(imgAura, ax, ay, ax + w, ay + h, f * fw, 0, (f + 1) * fw, fh, this);
+            }
+
             Image img = sprites.get(j.getEstado());
             if (img == null) img = sprites.get("idle");
 

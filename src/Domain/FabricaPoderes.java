@@ -5,6 +5,7 @@ public class FabricaPoderes {
 
     public static Poder crear(String pais) {
         switch (pais) {
+        	case "usa":
         	case "eeuu": return new Podereeeuu();
         	case "corea":return new Podercorea();
         	case "camerun":return new Podercamerun();

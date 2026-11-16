@@ -1,7 +1,10 @@
 package Domain;
 
+import java.util.Collections;
+import java.util.List;
 
-/** Efecto temporal sobre un jugador. Cada poder crea su propio tipo de efecto. */
+
+
 public abstract class Efecto {
     private final String nombre;
     private double restante; // frames
@@ -17,4 +20,10 @@ public abstract class Efecto {
     public void actualizar(double dt) { restante -= dt; }
     public boolean haExpirado() { return restante <= 0; }
     public String getNombre() { return nombre; }
+
+
+    public void alImpactar(Balon real) { }
+
+    /** Balones falsos que este efecto mantiene en juego (vacio salvo en Ilusion). */
+    public List<Balonfalso> getFalsos() { return Collections.emptyList(); }
 }

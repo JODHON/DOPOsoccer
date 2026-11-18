@@ -2,7 +2,7 @@ package Domain;
 
 
 public class Podereeeuu extends Poder {
-    public Podereeeuu() { super("EEUU", 6); }
+    public Podereeeuu() { super("EEUU", 10); }
 
     @Override public double getVelocidadTiro() { return 22.0; }
 

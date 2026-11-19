@@ -384,7 +384,7 @@ public class DOPOsoccerGUI extends JFrame {
             resultado = "¡GANA " + nombre2 + "!";
             paisGanador = pais2;
         } else {
-            resultado = "¡EMPATE!"; // no debería ocurrir: el empate se resuelve en muerte súbita
+            resultado = "¡EMPATE!";
         }
         JPanel fin = new JPanel();
         fin.setLayout(new BoxLayout(fin, BoxLayout.Y_AXIS));

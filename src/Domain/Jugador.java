@@ -43,7 +43,7 @@ public class Jugador {
     private int margenX = 60;
     private int margenY = 10;
 
-    public Jugador(double xInicial, double yInicial, int lado, String pais) {
+    public Jugador(double xInicial, double yInicial, int lado, String pais) throws DopoSoccerException{
         this.x = xInicial;
         this.y = yInicial;
         this.lado = lado;
@@ -203,15 +203,18 @@ public class Jugador {
     public void sumarPuntos(int p)   { puntos += p; }
 
     /** Compra un punto de mejora si alcanzan los puntos y no esta al maximo. */
-    public boolean comprarMejora(Estadisticas.Stat stat) {
-        if (stats.estaAlMaximo(stat)) return false;
+    public void comprarMejora(Estadisticas.Stat stat) throws DopoSoccerException {
+        if (stat == null) throw new DopoSoccerException(DopoSoccerException.STAT_NULA);
+
+        if (stats.estaAlMaximo(stat)) throw new DopoSoccerException(DopoSoccerException.STAT_AL_MAXIMO);
+
         int costo = stats.getCostoSiguiente(stat);
-        if (puntos < costo) return false;
-        puntos -= costo;
-        stats.subir(stat);
+        if (puntos < costo) throw new DopoSoccerException(DopoSoccerException.PUNTOS_INSUFICIENTES);
+            puntos -= costo;
+            stats.subir(stat);
+            
         if (stat == Estadisticas.Stat.SURVIVAL) vida = stats.getVidaMaxima();
-        return true;
-    }
+}
 
     public void reiniciarPos(double xInicial, double yInicial) {
         this.x = xInicial;

@@ -21,7 +21,12 @@ public class DOPOsoccer {
     }
 
     public DOPOsoccer(String pais1, String pais2, Partido.Modo modo, int limite) {
-        partido = new Partido(pais1, pais2, modo, limite);
+        try {
+            partido = new Partido(pais1, pais2, modo, limite);
+        } 
+        catch (DopoSoccerException e) {
+            throw new RuntimeException(e);
+        }
         colisiones = new Colisiones();
     }
 

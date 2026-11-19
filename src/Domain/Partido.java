@@ -36,21 +36,24 @@ public class Partido {
     private long inicioPausaNs;
     private long pausaAcumuladaNs;
 
-    public Partido(String pais1, String pais2) {
+    public Partido(String pais1, String pais2) throws DopoSoccerException {
         this(pais1, pais2, Modo.TIEMPO, DURACION_DEFECTO_S);
     }
 
-    public Partido(String pais1, String pais2, Modo modo) {
+    public Partido(String pais1, String pais2, Modo modo) throws DopoSoccerException {
         this(pais1, pais2, modo,
                 modo == Modo.TIEMPO ? DURACION_DEFECTO_S : GOLES_DEFECTO);
     }
 
     /** limite son segundos en modo TIEMPO o goles en modo GOLES. */
-    public Partido(String pais1, String pais2, Modo modo, int limite) {
-        if (modo == null) throw new IllegalArgumentException("El modo no puede ser null");
+    public Partido(String pais1, String pais2, Modo modo, int limite) throws DopoSoccerException {
+        if (modo == null) throw new DopoSoccerException(DopoSoccerException.MODO_NULO);
+
+        if (limite<=0) throw new DopoSoccerException(DopoSoccerException.LIMITE_INVALIDO);
         this.modo = modo;
         this.duracionNs = (modo == Modo.TIEMPO
                 ? Math.max(1, limite) : DURACION_DEFECTO_S) * 1_000_000_000L;
+
         this.golesObjetivo = modo == Modo.GOLES
                 ? Math.max(1, limite) : GOLES_DEFECTO;
 

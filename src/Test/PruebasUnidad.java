@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import Domain.*;
 import Domain.Estadisticas.Stat;
 import java.awt.event.KeyEvent;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,13 @@ public class PruebasUnidad {
             setDouble(b, "y", y);
             setDouble(b, "vx", 0);
             setDouble(b, "vy", 0);
+            try {
+                java.lang.reflect.Method m = Balon.class.getDeclaredMethod("actualizarHitbox");
+                m.setAccessible(true);
+                m.invoke(b);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         private static void setDouble(Balon b, String campo, double valor) {
@@ -32,8 +40,11 @@ public class PruebasUnidad {
         }
 
         /** Hace parecer que el partido empezo hace 'segundos' segundos. */
-        static void adelantarReloj(Partido p, long segundos) {
+        static void adelantarReloj(DOPOsoccer juego, long segundos) {
             try {
+                Field pf = DOPOsoccer.class.getDeclaredField("partido");
+                pf.setAccessible(true);
+                Partido p = (Partido) pf.get(juego);
                 Field f = Partido.class.getDeclaredField("inicioNs");
                 f.setAccessible(true);
                 f.setLong(p, System.nanoTime() - segundos * 1_000_000_000L);
@@ -862,22 +873,22 @@ public class PruebasUnidad {
     @Nested
     class PartidoTest {
 
-        private Partido p;
+        private DOPOsoccer p;
 
         @BeforeEach
-        void setUp() { p = new Partido("alemania", "corea"); }
+        void setUp() { p = new DOPOsoccer("alemania", "corea"); }
 
         // ---- helpers ----
         /** Balon dentro del arco izquierdo: anota el jugador 2. */
-        private void golIzquierdo(Partido partido) {
+        private void golIzquierdo(DOPOsoccer partido) {
             TestUtil.colocarBalon(partido.getBalon(), 90, 400);
-            partido.actualizarLogica();
+            partido.actualizarJuego();
         }
 
         /** Balon dentro del arco derecho: anota el jugador 1. */
-        private void golDerecho(Partido partido) {
+        private void golDerecho(DOPOsoccer partido) {
             TestUtil.colocarBalon(partido.getBalon(), 1150, 400);
-            partido.actualizarLogica();
+            partido.actualizarJuego();
         }
 
         // ---------- Construccion ----------
@@ -906,13 +917,13 @@ public class PruebasUnidad {
 
         @Test
         void modoTiempoConLimitePersonalizado() {
-            Partido q = new Partido("usa", "corea", Partido.Modo.TIEMPO, 90);
+            DOPOsoccer q = new DOPOsoccer("usa", "corea", Partido.Modo.TIEMPO, 90);
             assertEquals(90, q.getTiempoRestante(), 1.0);
         }
 
         @Test
         void modoGolesTomaElObjetivoYNoTieneReloj() {
-            Partido q = new Partido("usa", "corea", Partido.Modo.GOLES, 3);
+            DOPOsoccer q = new DOPOsoccer("usa", "corea", Partido.Modo.GOLES, 3);
             assertEquals(Partido.Modo.GOLES, q.getModo());
             assertEquals(3, q.getGolesObjetivo());
             assertEquals(0, q.getTiempoRestante(), 1e-9);
@@ -923,23 +934,23 @@ public class PruebasUnidad {
         @Test
         void jugador1SeMueveConAyD() {
             p.teclaPresionada(KeyEvent.VK_D);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(205, p.getJugador().getX(), 1e-9);
 
             p.teclaLiberada(KeyEvent.VK_D);
             p.teclaPresionada(KeyEvent.VK_A);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(200, p.getJugador().getX(), 1e-9);
         }
 
         @Test
         void jugador2SeMueveConLasFlechas() {
             p.teclaPresionada(KeyEvent.VK_LEFT);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(875, p.getJugador2().getX(), 1e-9);
             p.teclaLiberada(KeyEvent.VK_LEFT);
             p.teclaPresionada(KeyEvent.VK_RIGHT);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(880, p.getJugador2().getX(), 1e-9);
         }
 
@@ -947,7 +958,7 @@ public class PruebasUnidad {
         void saltarConWyConFlechaArriba() {
             p.teclaPresionada(KeyEvent.VK_W);
             p.teclaPresionada(KeyEvent.VK_UP);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertTrue(p.getJugador().getY() < 300);
             assertTrue(p.getJugador2().getY() < 300);
         }
@@ -973,7 +984,7 @@ public class PruebasUnidad {
             p.pausar();
             assertTrue(p.isPausado());
             p.teclaPresionada(KeyEvent.VK_D);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(200, p.getJugador().getX(), 1e-9);
             assertEquals(300, p.getJugador().getY(), 1e-9);
         }
@@ -984,7 +995,7 @@ public class PruebasUnidad {
             p.teclaPresionada(KeyEvent.VK_D);
             p.reanudar();
             assertFalse(p.isPausado());
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(205, p.getJugador().getX(), 1e-9);
         }
 
@@ -993,7 +1004,7 @@ public class PruebasUnidad {
             p.pausar();
             p.teclaPresionada(KeyEvent.VK_W);
             p.reanudar();
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertTrue(p.getJugador().getY() >= 300);
         }
 
@@ -1013,7 +1024,7 @@ public class PruebasUnidad {
         @Test
         void elBalonRebotaConUnJugadorSinAura() {
             TestUtil.colocarBalon(p.getBalon(), 300, 400);
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertEquals(6, p.getBalon().getVx(), 1e-6);
             assertEquals(-6, p.getBalon().getVy(), 1e-6);
         }
@@ -1024,7 +1035,7 @@ public class PruebasUnidad {
             j.cargaPoder(100);
             assertTrue(j.usarPoder());
             TestUtil.colocarBalon(p.getBalon(), 300, 400);
-            p.actualizarLogica();
+            p.actualizarJuego();
 
             assertFalse(j.tienePoder());                       // el aura se consume
             assertTrue(p.getBalon().tienePoderActivo());
@@ -1037,7 +1048,7 @@ public class PruebasUnidad {
             Jugador rival = p.getJugador2();
             p.getBalon().activarPoder(new Podercorea(), p.getJugador());
             TestUtil.colocarBalon(p.getBalon(), 960, 400);
-            p.actualizarLogica();
+            p.actualizarJuego();
 
             assertEquals(75, rival.getVida(), 1e-9);
             assertInstanceOf(Efectocorea.class, rival.getEfectoActivo());
@@ -1049,7 +1060,7 @@ public class PruebasUnidad {
             Jugador lanzador = p.getJugador2();
             p.getBalon().activarPoder(new Podercorea(), lanzador);
             TestUtil.colocarBalon(p.getBalon(), 960, 400);
-            p.actualizarLogica();
+            p.actualizarJuego();
 
             assertEquals(100, lanzador.getVida(), 1e-9);
             assertNull(lanzador.getEfectoActivo());
@@ -1059,21 +1070,21 @@ public class PruebasUnidad {
         @Test
         void losJugadoresSeSeparanSiSeSuperponen() {
             p.getJugador2().reiniciarPos(250, 300); // hitboxes encimados
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertTrue(p.getJugador().getX() < 200);
             assertTrue(p.getJugador2().getX() > 250);
         }
 
         @Test
         void laIlusionDeEEUUCreaBalonesFalsosEnElPartido() {
-            Partido q = new Partido("alemania", "alemania");
+            DOPOsoccer q = new DOPOsoccer("alemania", "alemania");
             q.getJugador2().aplicarEfecto(new Efectoeeuu());
             // El efecto necesita el balon real en movimiento
             Efecto ef = q.getJugador2().getEfectoActivo();
             Balon real = q.getBalon();
             real.golpear(10, 0);
             ef.alImpactar(real);
-            q.actualizarLogica();
+            q.actualizarJuego();
             assertEquals(7, q.getBalonesFalsos().size());
         }
 
@@ -1111,7 +1122,7 @@ public class PruebasUnidad {
         @Test
         void siElBalonTocaElTechoNoCuentaGol() {
             TestUtil.colocarBalon(p.getBalon(), 90, 270); // toca techo y red a la vez
-            p.actualizarLogica();
+            p.actualizarJuego();
             assertArrayEquals(new int[] { 0, 0 }, p.getGoles());
             assertEquals(235, p.getBalon().getY(), 1e-9); // 315 - size
         }
@@ -1120,7 +1131,7 @@ public class PruebasUnidad {
 
         @Test
         void modoGolesTerminaAlLlegarAlObjetivo() {
-            Partido q = new Partido("alemania", "corea", Partido.Modo.GOLES, 2);
+            DOPOsoccer q = new DOPOsoccer("alemania", "corea", Partido.Modo.GOLES, 2);
             golIzquierdo(q);
             assertEquals(Partido.Estado.JUGANDO, q.getEstado());
             golIzquierdo(q);
@@ -1130,7 +1141,7 @@ public class PruebasUnidad {
 
         @Test
         void alTerminarSeOtorganPuntos() {
-            Partido q = new Partido("alemania", "corea", Partido.Modo.GOLES, 1);
+            DOPOsoccer q = new DOPOsoccer("alemania", "corea", Partido.Modo.GOLES, 1);
             golIzquierdo(q);
             assertEquals(100, q.getJugador2().getPuntos());  // ganador
             assertEquals(25, q.getJugador().getPuntos());    // perdedor
@@ -1138,19 +1149,19 @@ public class PruebasUnidad {
 
         @Test
         void modoTiempoGanaQuienVayaAdelanteAlAcabar() {
-            Partido q = new Partido("alemania", "corea", Partido.Modo.TIEMPO, 30);
+            DOPOsoccer q = new DOPOsoccer("alemania", "corea", Partido.Modo.TIEMPO, 30);
             golDerecho(q);                      // 1 - 0
             TestUtil.adelantarReloj(q, 31);
-            q.actualizarLogica();
+            q.actualizarJuego();
             assertEquals(Partido.Estado.TERMINADO, q.getEstado());
             assertSame(q.getJugador(), q.getGanador());
         }
 
         @Test
         void empateAlAcabarElTiempoVaAMuerteSubita() {
-            Partido q = new Partido("alemania", "corea", Partido.Modo.TIEMPO, 30);
+            DOPOsoccer q = new DOPOsoccer("alemania", "corea", Partido.Modo.TIEMPO, 30);
             TestUtil.adelantarReloj(q, 31);
-            q.actualizarLogica();
+            q.actualizarJuego();
             assertEquals(Partido.Estado.MUERTE_SUBITA, q.getEstado());
             assertEquals(0, q.getTiempoRestante(), 1e-9);
             assertNull(q.getGanador());
@@ -1158,9 +1169,9 @@ public class PruebasUnidad {
 
         @Test
         void enMuerteSubitaElPrimerGolGana() {
-            Partido q = new Partido("alemania", "corea", Partido.Modo.TIEMPO, 30);
+            DOPOsoccer q = new DOPOsoccer("alemania", "corea", Partido.Modo.TIEMPO, 30);
             TestUtil.adelantarReloj(q, 31);
-            q.actualizarLogica();
+            q.actualizarJuego();
             golIzquierdo(q);
             assertEquals(Partido.Estado.TERMINADO, q.getEstado());
             assertSame(q.getJugador2(), q.getGanador());

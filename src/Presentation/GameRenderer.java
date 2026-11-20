@@ -10,6 +10,7 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 import javax.imageio.ImageIO;
@@ -31,6 +32,8 @@ public static class GameAssets {
         private final Image ball;
         private final Image aura;
         private final Image goal;
+
+        
         private final Map<String, Image> firstTeamSprites;
         private final Map<String, Image> secondTeamSprites;
     
@@ -39,6 +42,8 @@ public static class GameAssets {
             ball = loadImage("/Elementos/balon.png");
             aura = loadImage("/Elementos/aura.png");
             goal = loadImage("/Elementos/arco_derecho.png");
+
+            
             firstTeamSprites = loadSprites(teamOne);
             secondTeamSprites = loadSprites(teamTwo);
         }
@@ -79,7 +84,7 @@ public static class GameAssets {
                 assets.getFirstTeamSprites(), assets.getAura(), false, Color.BLUE);
             playerRenderer.draw(graphics, panel, game.getJugador2(),
                 assets.getSecondTeamSprites(), assets.getAura(), true, Color.RED);
-            hudRenderer.draw(graphics, panel, game, cpuMode);
+            hudRenderer.draw(graphics, panel, game, cpuMode, assets);
             drawPauseShade(graphics, panel, game);
         }
     
@@ -208,13 +213,28 @@ public static class GameAssets {
         }
         private static class HudRenderer {
         private static final Color SELECTED_COLOR = new Color(255, 200, 40);
+        
+        
     
-        public void draw(Graphics2D graphics, JPanel panel, DOPOsoccer game, boolean cpuMode) {
+        public void draw(Graphics2D graphics, JPanel panel, DOPOsoccer game, boolean cpuMode, GameAssets assets) {
             drawScoreboard(graphics, panel, game, cpuMode);
             drawMatchClock(graphics, panel, game);
             drawPowerBar(graphics, panel, game.getJugador(), 30, 30, new Color(33, 150, 243));
             drawPowerBar(graphics, panel, game.getJugador2(), panel.getWidth() - 270, 30,
                 new Color(244, 67, 54));
+            
+            
+            drawLifeBar(graphics, panel, game.getJugador(), 30, 60, new Color(33, 150, 243));
+            drawLifeBar(graphics, panel, game.getJugador2(), panel.getWidth() - 270, 60,
+                    new Color(244, 67, 54));
+        
+            
+            
+    
+			Image blockedIcon = null;
+			if (blockedIcon == null) blockedIcon = assets.loadImage("/Elementos/icono_bloqueado.png");
+			drawBloqueo(graphics, panel, game.getJugador(), 276, 52, blockedIcon);
+			drawBloqueo(graphics, panel, game.getJugador2(), panel.getWidth() - 340, 52, blockedIcon);
         }
     
         private void drawScoreboard(Graphics2D graphics, JPanel panel, DOPOsoccer game, boolean cpuMode) {
@@ -308,6 +328,38 @@ public static class GameAssets {
             graphics.setFont(new Font("Arial", Font.BOLD, 14));
             graphics.setColor(ready && !player.tienePoder() ? Color.BLACK : Color.WHITE);
             drawCenteredText(graphics, text, x + width / 2, y + 17);
+        }
+        
+        private void drawLifeBar(Graphics2D graphics, JPanel panel, Jugador player, int x, int y, Color fillColor) {
+			int width = 240;
+			int height = 24;
+			double charge = Math.max(0, Math.min(100, player.getVida()));
+			boolean ready = charge >= 100;
+			
+			graphics.setColor(new Color(10, 10, 22, 220));
+			graphics.fillRoundRect(x, y, width, height, 14, 14);
+			graphics.setColor(ready ? SELECTED_COLOR : fillColor);
+			graphics.fillRoundRect(x, y, (int) (width * charge / 100.0), height, 14, 14);
+			graphics.setColor(new Color(255, 255, 255, 150));
+			graphics.setStroke(new BasicStroke(2f));
+			graphics.drawRoundRect(x, y, width, height, 14, 14);
+			graphics.setStroke(new BasicStroke(1f));
+			
+			String text;
+			if (ready) text = "VIDA AL 100";
+			else text = (int) player.getVida()  + " de " + (int) player.getVidaMaxima();
+			graphics.setFont(new Font("Arial", Font.BOLD, 14));
+			graphics.setColor(ready && !player.tienePoder() ? Color.BLACK : Color.WHITE);
+			drawCenteredText(graphics, text, x + width / 2, y + 17);
+		}
+        
+        private void drawBloqueo(Graphics2D graphics,JPanel panel,Jugador player, int x , int y, Image blockedIcon) {
+        	boolean bloqueo = player.estaAturdido();
+        	if(bloqueo) {
+        		
+        		graphics.drawImage((BufferedImage) blockedIcon, null, x, y);
+        	}
+        	
         }
     
         private void drawCenteredText(Graphics2D graphics, String text, int centerX, int baselineY) {

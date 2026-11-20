@@ -21,9 +21,9 @@ public class DOPOsoccerGUI extends JFrame {
     private DOPOsoccer game;
     private GamePanel gamePanel;
     private ResultsPanel resultsPanel;
-    private GameRenderer.GameAssets gameAssets;
+    private GameRenderer gameRenderer;
     private Timer gameTimer;
-    private MenuPanel.MatchConfig currentConfig;
+    
 
     public DOPOsoccerGUI() {
         super("DOPOSoccer");
@@ -38,16 +38,16 @@ public class DOPOsoccerGUI extends JFrame {
         setVisible(true);
     }
 
-    private void startMatch(MenuPanel.MatchConfig config) {
+    private void startMatch() {
         stopGameTimer();
-        currentConfig = config;
         if (gamePanel != null) screenContainer.remove(gamePanel);
         if (resultsPanel != null) screenContainer.remove(resultsPanel);
-        game = new DOPOsoccer(config.getTeamOne(), config.getTeamTwo(),
-            config.getMatchMode(), config.getSelectedLimit());
-        gameAssets = new GameRenderer.GameAssets(config.getStadium(), config.getTeamOne(), config.getTeamTwo());
+        game = new DOPOsoccer(menuPanel.getTeamOne(), menuPanel.getTeamTwo(),
+            menuPanel.getMatchMode(), menuPanel.getSelectedLimit());
+        gameRenderer = new GameRenderer(menuPanel.getStadium(),
+            menuPanel.getTeamOne(), menuPanel.getTeamTwo());
 
-        gamePanel = new GamePanel(game, gameAssets, config.isCpuMode(), this::returnToMenu);
+        gamePanel = new GamePanel(game, gameRenderer, menuPanel.isCpuMode(), this::returnToMenu);
         screenContainer.add(gamePanel, GAME_SCREEN);
         cardLayout.show(screenContainer, GAME_SCREEN);
         gamePanel.requestFocusInWindow();
@@ -75,8 +75,8 @@ public class DOPOsoccerGUI extends JFrame {
 
     private void showResults() {
         resultsPanel = new ResultsPanel(game,
-            currentConfig.getTeamOne(), currentConfig.getTeamTwo(),
-            currentConfig.isCpuMode(), gameAssets, this::returnToMenu);
+            menuPanel.getTeamOne(), menuPanel.getTeamTwo(),
+            menuPanel.isCpuMode(), gameRenderer, this::returnToMenu);
         screenContainer.add(resultsPanel, RESULTS_SCREEN);
         cardLayout.show(screenContainer, RESULTS_SCREEN);
         screenContainer.revalidate();

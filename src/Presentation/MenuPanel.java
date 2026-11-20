@@ -5,24 +5,24 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.FlowLayout;
 import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
-/** Main menu. It gathers selections and reports them as a MatchConfig. */
+/** Main menu. Stores the selected teams, stadium and match settings. */
 public class MenuPanel extends JPanel {
     private static final String[] TEAMS = {"alemania", "corea", "camerun", "nigeria", "usa"};
     private static final String[] STADIUMS = {
@@ -31,14 +31,18 @@ public class MenuPanel extends JPanel {
     private static final String FLAG_FOLDER = "/banderas/bandera_";
     private static final String THUMBNAIL_FOLDER = "/miniaturas/miniatura_";
     private static final Color MENU_BACKGROUND = new Color(20, 22, 38);
+    private static final Color SELECTED_COLOR = new Color(255, 200, 40);
+    private static final Color TITLE_COLOR = new Color(180, 200, 255);
+    private static final Color BUTTON_COLOR = new Color(40, 44, 70);
+    private static final Color BORDER_COLOR = new Color(70, 75, 110);
 
     private String teamOne = TEAMS[0];
     private String teamTwo = TEAMS[1];
     private String stadium = STADIUMS[0];
+    private final JLabel secondTeamTitle = new JLabel("JUGADOR 2");
     private final MatchSettingsPanel settingsPanel;
-    private final TeamSelectorPanel secondTeamSelector;
 
-    public MenuPanel(Consumer<MatchConfig> onStart) {
+    public MenuPanel(Runnable onStart) {
         setLayout(new BorderLayout());
         setBackground(MENU_BACKGROUND);
         setPreferredSize(new Dimension(1280, 720));
@@ -49,29 +53,109 @@ public class MenuPanel extends JPanel {
         title.setBorder(BorderFactory.createEmptyBorder(15, 0, 5, 0));
         add(title, BorderLayout.NORTH);
 
-        TeamSelectorPanel firstTeamSelector = new TeamSelectorPanel(
-            "JUGADOR 1", TEAMS, FLAG_FOLDER, 60, 40, 1, teamOne, value -> teamOne = value);
-        firstTeamSelector.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 20));
-        add(firstTeamSelector, BorderLayout.WEST);
+        JPanel firstTeam = createSelector("JUGADOR 1", TEAMS, FLAG_FOLDER,
+            60, 40, 1, teamOne, value -> teamOne = value);
+        firstTeam.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 20));
+        add(firstTeam, BorderLayout.WEST);
 
-        secondTeamSelector = new TeamSelectorPanel(
-            "JUGADOR 2", TEAMS, FLAG_FOLDER, 60, 40, 1, teamTwo, value -> teamTwo = value);
-        secondTeamSelector.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 40));
-        add(secondTeamSelector, BorderLayout.EAST);
+        JPanel secondTeam = createSelector(secondTeamTitle, TEAMS, FLAG_FOLDER,
+            60, 40, 1, teamTwo, value -> teamTwo = value);
+        secondTeam.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 40));
+        add(secondTeam, BorderLayout.EAST);
 
-        TeamSelectorPanel stadiumSelector = new TeamSelectorPanel(
-            "ESTADIO", STADIUMS, THUMBNAIL_FOLDER, 190, 107, 4, stadium, value -> stadium = value);
+        JPanel stadiumSelector = createSelector("ESTADIO", STADIUMS, THUMBNAIL_FOLDER,
+            190, 107, 4, stadium, value -> stadium = value);
         JPanel centeredStadiums = new JPanel(new GridBagLayout());
         centeredStadiums.setOpaque(false);
         centeredStadiums.add(stadiumSelector);
         add(centeredStadiums, BorderLayout.CENTER);
 
         settingsPanel = new MatchSettingsPanel(
-            cpuMode -> secondTeamSelector.setTitle(cpuMode ? "CPU" : "JUGADOR 2"));
+            cpuMode -> secondTeamTitle.setText(cpuMode ? "CPU" : "JUGADOR 2"));
         add(createBottomPanel(onStart), BorderLayout.SOUTH);
     }
 
-    private JPanel createBottomPanel(Consumer<MatchConfig> onStart) {
+    private JPanel createSelector(String title, String[] options, String imageFolder,
+                                  int imageWidth, int imageHeight, int columns,
+                                  String initialValue, java.util.function.Consumer<String> onSelection) {
+        JLabel heading = new JLabel(title);
+        heading.setFont(new Font("Arial", Font.BOLD, 20));
+        heading.setForeground(TITLE_COLOR);
+        heading.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return createSelector(heading, options, imageFolder, imageWidth, imageHeight,
+            columns, initialValue, onSelection);
+    }
+
+    private JPanel createSelector(JLabel heading, String[] options, String imageFolder,
+                                  int imageWidth, int imageHeight, int columns,
+                                  String initialValue, java.util.function.Consumer<String> onSelection) {
+        JPanel selector = new JPanel();
+        selector.setLayout(new BoxLayout(selector, BoxLayout.Y_AXIS));
+        selector.setOpaque(false);
+        heading.setFont(new Font("Arial", Font.BOLD, 20));
+        heading.setForeground(TITLE_COLOR);
+        heading.setAlignmentX(Component.CENTER_ALIGNMENT);
+        selector.add(heading);
+        selector.add(Box.createVerticalStrut(8));
+
+        JPanel grid = new JPanel(new GridLayout(0, columns, 12, 8));
+        grid.setOpaque(false);
+        List<JToggleButton> buttons = new ArrayList<>();
+        for (String option : options) {
+            JToggleButton button = createOptionButton(option, imageFolder,
+                imageWidth, imageHeight, initialValue, buttons, onSelection);
+            buttons.add(button);
+            grid.add(button);
+        }
+
+        JPanel centeredGrid = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        centeredGrid.setOpaque(false);
+        centeredGrid.add(grid);
+        selector.add(centeredGrid);
+        return selector;
+    }
+
+    private JToggleButton createOptionButton(String option, String folder, int width, int height,
+                                             String initialValue, List<JToggleButton> buttons,
+                                             java.util.function.Consumer<String> onSelection) {
+        JToggleButton button = new JToggleButton(option.replace('_', ' ').toUpperCase());
+        button.setFont(new Font("Arial", Font.BOLD, 11));
+        button.setForeground(Color.WHITE);
+        button.setBackground(BUTTON_COLOR);
+        button.setFocusPainted(false);
+        button.setVerticalTextPosition(JToggleButton.BOTTOM);
+        button.setHorizontalTextPosition(JToggleButton.CENTER);
+        button.setSelected(option.equals(initialValue));
+
+        try {
+            Image image = ImageIO.read(getClass().getResource(folder + option + ".png"));
+            if (image != null) {
+                button.setIcon(new ImageIcon(image.getScaledInstance(width, height, Image.SCALE_SMOOTH)));
+            }
+        } catch (Exception exception) {
+            System.out.println("Could not load image: " + folder + option + ".png");
+        }
+        updateBorder(button);
+        button.addActionListener(event -> {
+            for (JToggleButton other : buttons) {
+                other.setSelected(other == button);
+                updateBorder(other);
+            }
+            button.setSelected(true);
+            updateBorder(button);
+            onSelection.accept(option);
+        });
+        return button;
+    }
+
+    private void updateBorder(JToggleButton button) {
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(button.isSelected() ? SELECTED_COLOR : BORDER_COLOR,
+                button.isSelected() ? 4 : 1),
+            BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+    }
+
+    private JPanel createBottomPanel(Runnable onStart) {
         JPanel bottom = new JPanel();
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
         bottom.setOpaque(false);
@@ -82,145 +166,20 @@ public class MenuPanel extends JPanel {
         startButton.setFont(new Font("Arial", Font.BOLD, 30));
         startButton.setFocusPainted(false);
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        startButton.addActionListener(event -> onStart.accept(createConfig()));
+        startButton.addActionListener(event -> onStart.run());
         bottom.add(startButton);
         bottom.add(Box.createVerticalStrut(15));
         return bottom;
     }
 
-    private MatchConfig createConfig() {
-        return new MatchConfig(teamOne, teamTwo, stadium,
-            settingsPanel.isCpuMode(), settingsPanel.getMatchMode(),
-            settingsPanel.getTimeLimitSeconds(), settingsPanel.getGoalLimit());
+    public String getTeamOne() { return teamOne; }
+    public String getTeamTwo() { return teamTwo; }
+    public String getStadium() { return stadium; }
+    public boolean isCpuMode() { return settingsPanel.isCpuMode(); }
+    public Partido.Modo getMatchMode() { return settingsPanel.getMatchMode(); }
+    public int getTimeLimitSeconds() { return settingsPanel.getTimeLimitSeconds(); }
+    public int getGoalLimit() { return settingsPanel.getGoalLimit(); }
+    public int getSelectedLimit() {
+        return getMatchMode() == Partido.Modo.TIEMPO ? getTimeLimitSeconds() : getGoalLimit();
     }
-    // Selector used for both teams and stadiums in this menu.
-    private static class TeamSelectorPanel extends JPanel {
-    private static final Color SELECTED_COLOR = new Color(255, 200, 40);
-    private static final Color TITLE_COLOR = new Color(180, 200, 255);
-    private static final Color BUTTON_COLOR = new Color(40, 44, 70);
-    private static final Color BORDER_COLOR = new Color(70, 75, 110);
-
-    private final List<JToggleButton> buttons = new ArrayList<>();
-    private final JLabel heading;
-    private String selectedValue;
-
-    public TeamSelectorPanel(String title, String[] options, String imageFolder,
-                             int imageWidth, int imageHeight, int columns,
-                             String initialValue, Consumer<String> onSelection) {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setOpaque(false);
-        selectedValue = initialValue;
-
-        heading = new JLabel(title);
-        heading.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 20));
-        heading.setForeground(TITLE_COLOR);
-        heading.setAlignmentX(Component.CENTER_ALIGNMENT);
-        add(heading);
-        add(Box.createVerticalStrut(8));
-
-        JPanel grid = new JPanel(new GridLayout(0, columns, 12, 8));
-        grid.setOpaque(false);
-        for (String option : options) {
-            grid.add(createOptionButton(option, imageFolder, imageWidth, imageHeight, onSelection));
-        }
-
-        JPanel centeredGrid = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        centeredGrid.setOpaque(false);
-        centeredGrid.add(grid);
-        add(centeredGrid);
-    }
-
-    public String getSelectedValue() {
-        return selectedValue;
-    }
-
-    public void setTitle(String title) {
-        heading.setText(title);
-    }
-
-    private JToggleButton createOptionButton(String option, String folder,
-                                              int width, int height,
-                                              Consumer<String> onSelection) {
-        String label = option.replace('_', ' ').toUpperCase();
-        JToggleButton button = new JToggleButton(label);
-        button.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 11));
-        button.setForeground(Color.WHITE);
-        button.setBackground(BUTTON_COLOR);
-        button.setFocusPainted(false);
-        button.setVerticalTextPosition(JToggleButton.BOTTOM);
-        button.setHorizontalTextPosition(JToggleButton.CENTER);
-        button.setSelected(option.equals(selectedValue));
-
-        Image image = loadImage(folder + option + ".png");
-        if (image != null) {
-            button.setIcon(new ImageIcon(image.getScaledInstance(width, height, Image.SCALE_SMOOTH)));
-        }
-        updateBorder(button);
-        button.addActionListener(event -> {
-            selectedValue = option;
-            for (JToggleButton other : buttons) {
-                other.setSelected(other == button);
-                updateBorder(other);
-            }
-            onSelection.accept(option);
-        });
-        buttons.add(button);
-        return button;
-    }
-
-    private Image loadImage(String path) {
-        try {
-            return javax.imageio.ImageIO.read(getClass().getResource(path));
-        } catch (Exception exception) {
-            System.out.println("Could not load image: " + path);
-            return null;
-        }
-    }
-
-    private void updateBorder(JToggleButton button) {
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(button.isSelected() ? SELECTED_COLOR : BORDER_COLOR,
-                                           button.isSelected() ? 4 : 1),
-            BorderFactory.createEmptyBorder(4, 4, 4, 4)));
-    }
-
-    }
-
-
-
-    static class MatchConfig {
-        private final String teamOne;
-        private final String teamTwo;
-        private final String stadium;
-        private final boolean cpuMode;
-        private final Partido.Modo matchMode;
-        private final int timeLimitSeconds;
-        private final int goalLimit;
-    
-        public MatchConfig(String teamOne, String teamTwo, String stadium,
-                           boolean cpuMode, Partido.Modo matchMode,
-                           int timeLimitSeconds, int goalLimit) {
-            this.teamOne = teamOne;
-            this.teamTwo = teamTwo;
-            this.stadium = stadium;
-            this.cpuMode = cpuMode;
-            this.matchMode = matchMode;
-            this.timeLimitSeconds = timeLimitSeconds;
-            this.goalLimit = goalLimit;
-        }
-    
-        public String getTeamOne() { return teamOne; }
-        public String getTeamTwo() { return teamTwo; }
-        public String getStadium() { return stadium; }
-        public boolean isCpuMode() { return cpuMode; }
-        public Partido.Modo getMatchMode() { return matchMode; }
-        public int getTimeLimitSeconds() { return timeLimitSeconds; }
-        public int getGoalLimit() { return goalLimit; }
-    
-        public int getSelectedLimit() {
-            return matchMode == Partido.Modo.TIEMPO ? timeLimitSeconds : goalLimit;
-        }
-    }
-
-    
 }

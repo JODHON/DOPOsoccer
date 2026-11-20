@@ -20,7 +20,7 @@ public class ResultsPanel extends JPanel {
     private static final Color TITLE_COLOR = new Color(180, 200, 255);
 
     public ResultsPanel(DOPOsoccer game, String teamOne, String teamTwo,
-                        boolean cpuMode, GameRenderer.GameAssets assets, Runnable onReturnToMenu) {
+                        boolean cpuMode, GameRenderer renderer, Runnable onReturnToMenu) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BACKGROUND);
         setPreferredSize(new Dimension(1280, 720));
@@ -32,7 +32,7 @@ public class ResultsPanel extends JPanel {
 
         addCenteredLabel("FIN DEL JUEGO", 54, Color.WHITE);
         add(Box.createVerticalStrut(30));
-        addWinnerFlag(winnerTeam, assets);
+        addWinnerFlag(winnerTeam, renderer);
         addCenteredLabel(result, 40, SELECTED_COLOR);
         add(Box.createVerticalStrut(15));
 
@@ -65,10 +65,10 @@ public class ResultsPanel extends JPanel {
         return null;
     }
 
-    private void addWinnerFlag(String team, GameRenderer.GameAssets assets) {
+    private void addWinnerFlag(String team, GameRenderer renderer) {
         if (team == null) return;
         try {
-            java.awt.Image flag = assets.loadImage("/banderas/bandera_" + team + ".png");
+            java.awt.Image flag = renderer.loadImage("/banderas/bandera_" + team + ".png");
             if (flag != null) {
                 JLabel flagLabel = new JLabel(new ImageIcon(
                     flag.getScaledInstance(150, 100, java.awt.Image.SCALE_SMOOTH)));

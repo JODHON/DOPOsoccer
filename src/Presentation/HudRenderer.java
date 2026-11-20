@@ -17,14 +17,13 @@ import javax.swing.JPanel;
 import Domain.DOPOsoccer;
 import Domain.Jugador;
 import Domain.Partido;
-import Presentation.GameRenderer.GameAssets;
 
 public class HudRenderer {
     private static final Color SELECTED_COLOR = new Color(255, 200, 40);
     
     
     
-    public void draw(Graphics2D graphics, JPanel panel, DOPOsoccer game, boolean cpuMode, GameAssets assets) {
+    public void draw(Graphics2D graphics, JPanel panel, DOPOsoccer game, boolean cpuMode, Image blockedIcon) {
         drawScoreboard(graphics, panel, game, cpuMode);
         drawMatchClock(graphics, panel, game);
         drawPowerBar(graphics, panel, game.getJugador(), 30, 30, new Color(33, 150, 243));
@@ -39,8 +38,6 @@ public class HudRenderer {
         
         
 
-		Image blockedIcon = null;
-		if (blockedIcon == null) blockedIcon = assets.loadImage("/Elementos/icono_bloqueado.png");
 		drawBloqueo(graphics, panel, game.getJugador(), 276, 52, blockedIcon);
 		drawBloqueo(graphics, panel, game.getJugador2(), panel.getWidth() - 340, 52, blockedIcon);
     }

@@ -9,7 +9,7 @@ import java.awt.event.KeyEvent;
 public class DOPOsoccer {
 
     private final Partido partido;
-    private final Colisiones colisiones;
+    private final GestorColisiones gestorColisiones;
 
     private boolean izquierda1;
     private boolean derecha1;
@@ -27,7 +27,7 @@ public class DOPOsoccer {
         catch (DopoSoccerException e) {
             throw new RuntimeException(e);
         }
-        colisiones = new Colisiones();
+        gestorColisiones = new GestorColisiones();
     }
 
     /** Ejecuta un ciclo de juego. La GUI lo llama desde su Timer. */
@@ -38,11 +38,11 @@ public class DOPOsoccer {
         partido.getJugador2().actualizar(1.0);
         partido.getBalon().actualizar(1.0);
 
-        colisiones.verificar(partido);
+        gestorColisiones.verificar(partido);
         partido.comprobarFinPorTiempo();
     }
 
-    // ---------------- ENTRADA DEL TECLADO ----------------
+    // TECLADO 
 
     public void teclaPresionada(int codigo) {
         switch (codigo) {
@@ -87,13 +87,13 @@ public class DOPOsoccer {
         partido.getJugador2().mover((derecha2 ? 1 : 0) - (izquierda2 ? 1 : 0));
     }
 
-    // ---------------- PAUSA ----------------
+    // PAUSA 
 
     public void pausar() { partido.pausar(); }
     public void reanudar() { partido.reanudar(); }
     public boolean isPausado() { return partido.isPausado(); }
 
-    // ---------------- CONSULTAS PARA LA GUI ----------------
+    // CONSULTAS PARA LA GUI 
 
     public int[] getGoles() { return partido.getGoles(); }
     public Partido.Estado getEstado() { return partido.getEstado(); }

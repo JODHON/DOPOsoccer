@@ -5,7 +5,7 @@ public class Efectocorea extends Efecto{
     private static final double VELOCIDAD_EMPUJE = 6.0; // px por frame
     private Jugador jugador;
 
-    public Efectocorea() { super("Empujado", 120); }
+    public Efectocorea() { super("Empujado", 90); }
 
     @Override public void aplicar(Jugador j) { jugador = j; }
     @Override public void quitar(Jugador j)  { }

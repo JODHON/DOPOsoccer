@@ -3,7 +3,7 @@ package Domain;
 public class Podercamerun extends Poder{
 
 	public Podercamerun() {
-		super("Camerun",5);
+		super("Camerun", 12); // 12 x 5 = 60 de dano real (Anexo 1)
 	}
 
 	@Override

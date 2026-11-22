@@ -21,8 +21,14 @@ public class DOPOsoccer {
     }
 
     public DOPOsoccer(String pais1, String pais2, Partido.Modo modo, int limite) {
+        this(pais1, pais2, modo, limite, null);
+    }
+
+    /** anterior: partida previa de la que se conservan puntos y mejoras (puede ser null). */
+    public DOPOsoccer(String pais1, String pais2, Partido.Modo modo, int limite, DOPOsoccer anterior) {
         try {
-            partido = new Partido(pais1, pais2, modo, limite);
+            partido = new Partido(pais1, pais2, modo, limite,
+                anterior == null ? null : anterior.partido);
         } 
         catch (DopoSoccerException e) {
             throw new RuntimeException(e);

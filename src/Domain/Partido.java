@@ -15,8 +15,8 @@ public class Partido {
     public static final int DURACION_DEFECTO_S = 60;
     public static final int GOLES_DEFECTO = 5;
 
-    private static final int PUNTOS_GANADOR = 100;
-    private static final int PUNTOS_PERDEDOR = 25;
+    public static final int PUNTOS_GANADOR = 100;
+    public static final int PUNTOS_PERDEDOR = 25;
 
     private final Jugador jugador;
     private final Jugador jugador2;
@@ -47,6 +47,11 @@ public class Partido {
 
     /** limite son segundos en modo TIEMPO o goles en modo GOLES. */
     public Partido(String pais1, String pais2, Modo modo, int limite) throws DopoSoccerException {
+        this(pais1, pais2, modo, limite, null);
+    }
+
+    /** anterior: partido previo cuyos puntos y mejoras se conservan (puede ser null). */
+    public Partido(String pais1, String pais2, Modo modo, int limite, Partido anterior) throws DopoSoccerException {
         if (modo == null) throw new DopoSoccerException(DopoSoccerException.MODO_NULO);
 
         if (limite<=0) throw new DopoSoccerException(DopoSoccerException.LIMITE_INVALIDO);
@@ -57,8 +62,14 @@ public class Partido {
         this.golesObjetivo = modo == Modo.GOLES
                 ? Math.max(1, limite) : GOLES_DEFECTO;
 
-        jugador = new Jugador(200, 300, 1, pais1);
-        jugador2 = new Jugador(880, 300, 2, pais2);
+        jugador = (anterior == null)
+                ? new Jugador(200, 300, 1, pais1)
+                : new Jugador(200, 300, 1, pais1,
+                        anterior.jugador.getStats(), anterior.jugador.getPuntos());
+        jugador2 = (anterior == null)
+                ? new Jugador(880, 300, 2, pais2)
+                : new Jugador(880, 300, 2, pais2,
+                        anterior.jugador2.getStats(), anterior.jugador2.getPuntos());
         balon = new Balon(600, 150, 80, 0.75);
         canchaizq = new Cancha(200, 400, 0, 315);
         canchader = new Cancha(200, 400, 1080, 315);

@@ -24,7 +24,7 @@ import javax.swing.JToggleButton;
 
 /** Main menu. Stores the selected teams, stadium and match settings. */
 public class MenuPanel extends JPanel {
-    private static final String[] TEAMS = {"alemania", "corea", "camerun", "nigeria", "usa"};
+    private static final String[] TEAMS = { "corea", "camerun", "nigeria", "usa"};
     private static final String[] STADIUMS = {
         "alemania", "corea", "camerun", "nigeria", "usa", "bogota", "bogota_es_roja"
     };
@@ -41,8 +41,13 @@ public class MenuPanel extends JPanel {
     private String stadium = STADIUMS[0];
     private final JLabel secondTeamTitle = new JLabel("JUGADOR 2");
     private final MatchSettingsPanel settingsPanel;
+    private final JButton improvementsButton = new JButton("MEJORAS");
 
     public MenuPanel(Runnable onStart) {
+        this(onStart, null);
+    }
+
+    public MenuPanel(Runnable onStart, Runnable onImprovements) {
         setLayout(new BorderLayout());
         setBackground(MENU_BACKGROUND);
         setPreferredSize(new Dimension(1280, 720));
@@ -72,7 +77,7 @@ public class MenuPanel extends JPanel {
 
         settingsPanel = new MatchSettingsPanel(
             cpuMode -> secondTeamTitle.setText(cpuMode ? "CPU" : "JUGADOR 2"));
-        add(createBottomPanel(onStart), BorderLayout.SOUTH);
+        add(createBottomPanel(onStart, onImprovements), BorderLayout.SOUTH);
     }
 
     private JPanel createSelector(String title, String[] options, String imageFolder,
@@ -155,7 +160,7 @@ public class MenuPanel extends JPanel {
             BorderFactory.createEmptyBorder(4, 4, 4, 4)));
     }
 
-    private JPanel createBottomPanel(Runnable onStart) {
+    private JPanel createBottomPanel(Runnable onStart, Runnable onImprovements) {
         JPanel bottom = new JPanel();
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
         bottom.setOpaque(false);
@@ -168,9 +173,22 @@ public class MenuPanel extends JPanel {
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         startButton.addActionListener(event -> onStart.run());
         bottom.add(startButton);
+
+        if (onImprovements != null) {
+            bottom.add(Box.createVerticalStrut(8));
+            improvementsButton.setFont(new Font("Arial", Font.BOLD, 20));
+            improvementsButton.setFocusPainted(false);
+            improvementsButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            improvementsButton.setEnabled(false); // se habilita al existir un partido jugado
+            improvementsButton.addActionListener(event -> onImprovements.run());
+            bottom.add(improvementsButton);
+        }
         bottom.add(Box.createVerticalStrut(15));
         return bottom;
     }
+
+    /** Habilita el botón MEJORAS (solo tiene sentido cuando ya hay jugadores con puntos). */
+    public void setImprovementsEnabled(boolean enabled) { improvementsButton.setEnabled(enabled); }
 
     public String getTeamOne() { return teamOne; }
     public String getTeamTwo() { return teamTwo; }

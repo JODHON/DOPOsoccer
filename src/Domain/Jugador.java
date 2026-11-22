@@ -17,7 +17,7 @@ public class Jugador {
     private boolean poderActivo;      // aura activa
     private final Poder poder;        // tiro de poder unico del pais (null si aun no existe)
     private Efecto efectoActivo;      // maximo uno; el nuevo reemplaza al anterior
-    private final Estadisticas stats = new Estadisticas();
+    private final Estadisticas stats;
     private int puntos;
 
     // Estado de movimiento
@@ -44,6 +44,14 @@ public class Jugador {
     private int margenY = 10;
 
     public Jugador(double xInicial, double yInicial, int lado, String pais) throws DopoSoccerException{
+        this(xInicial, yInicial, lado, pais, new Estadisticas(), 0);
+    }
+
+    /** Crea un jugador conservando las mejoras y los puntos de un partido anterior. */
+    public Jugador(double xInicial, double yInicial, int lado, String pais,
+                   Estadisticas stats, int puntos) throws DopoSoccerException{
+        this.stats = stats;
+        this.puntos = puntos;
         this.x = xInicial;
         this.y = yInicial;
         this.lado = lado;

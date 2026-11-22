@@ -2,7 +2,7 @@ package Domain;
 
 public class Podercorea extends Poder{
     public Podercorea() {
-        super("Corea",5); // 4 x 5 = 20 de dano base
+        super("Corea", 8); // 8 x 5 = 40 de dano real (Anexo 1)
     }
 
     @Override public double getVelocidadTiro() { return 22.0; }

@@ -2,6 +2,7 @@ package Presentation;
 
 import Domain.DOPOsoccer;
 import Domain.Jugador;
+import Domain.Partido;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -20,7 +21,7 @@ public class ResultsPanel extends JPanel {
     private static final Color TITLE_COLOR = new Color(180, 200, 255);
 
     public ResultsPanel(DOPOsoccer game, String teamOne, String teamTwo,
-                        boolean cpuMode, GameRenderer renderer, Runnable onReturnToMenu) {
+                        boolean cpuMode, GameRenderer renderer, Runnable onReturnToMenu,Runnable goToImprovements) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BACKGROUND);
         setPreferredSize(new Dimension(1280, 720));
@@ -39,15 +40,36 @@ public class ResultsPanel extends JPanel {
         int[] goals = game.getGoles();
         addCenteredLabel("JUGADOR 1  " + goals[0] + " - " + goals[1]
             + "  " + secondPlayerName, 28, TITLE_COLOR);
-        add(Box.createVerticalStrut(40));
+        add(Box.createVerticalStrut(10));
+        addPointsEarned(game, secondPlayerName);
+        add(Box.createVerticalStrut(30));
 
         JButton returnButton = new JButton("VOLVER AL MENÚ");
+        JButton improvementsButton = new JButton("MEJORAS");
+      
         returnButton.setFont(new Font("Arial", Font.BOLD, 28));
         returnButton.setFocusPainted(false);
         returnButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         returnButton.addActionListener(event -> onReturnToMenu.run());
         add(returnButton);
         add(Box.createVerticalGlue());
+        
+        improvementsButton.setFont(new Font("Arial", Font.BOLD, 28));
+        improvementsButton.setFocusPainted(false);
+        improvementsButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        improvementsButton.addActionListener(event -> goToImprovements.run());
+        add(improvementsButton);
+        add(Box.createVerticalGlue());
+    }
+
+    private void addPointsEarned(DOPOsoccer game, String secondPlayerName) {
+        Jugador winner = game.getGanador();
+        if (winner == null) return;
+        boolean firstWins = winner == game.getJugador();
+        int firstPoints = firstWins ? Partido.PUNTOS_GANADOR : Partido.PUNTOS_PERDEDOR;
+        int secondPoints = firstWins ? Partido.PUNTOS_PERDEDOR : Partido.PUNTOS_GANADOR;
+        addCenteredLabel("PUNTOS GANADOS:  JUGADOR 1 +" + firstPoints
+            + "   " + secondPlayerName + " +" + secondPoints, 22, SELECTED_COLOR);
     }
 
     private String getResultText(DOPOsoccer game, boolean cpuMode) {

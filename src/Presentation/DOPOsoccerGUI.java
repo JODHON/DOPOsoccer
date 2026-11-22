@@ -13,6 +13,7 @@ public class DOPOsoccerGUI extends JFrame {
     private static final String MENU_SCREEN = "menu";
     private static final String GAME_SCREEN = "game";
     private static final String RESULTS_SCREEN = "results";
+    private static final String IMPROVEMENTS_SCREEN = "improvements";
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel screenContainer = new JPanel(cardLayout);
@@ -21,13 +22,14 @@ public class DOPOsoccerGUI extends JFrame {
     private DOPOsoccer game;
     private GamePanel gamePanel;
     private ResultsPanel resultsPanel;
+    private ImprovementsPanel improvementsPanel;
     private GameRenderer gameRenderer;
     private Timer gameTimer;
-    
+    private String improvementsReturnScreen = RESULTS_SCREEN;
 
     public DOPOsoccerGUI() {
         super("DOPOSoccer");
-        menuPanel = new MenuPanel(this::startMatch);
+        menuPanel = new MenuPanel(this::startMatch, this::goToImprovementsFromMenu);
         screenContainer.add(menuPanel, MENU_SCREEN);
         add(screenContainer);
 
@@ -42,8 +44,9 @@ public class DOPOsoccerGUI extends JFrame {
         stopGameTimer();
         if (gamePanel != null) screenContainer.remove(gamePanel);
         if (resultsPanel != null) screenContainer.remove(resultsPanel);
+        if (improvementsPanel != null) screenContainer.remove(improvementsPanel);
         game = new DOPOsoccer(menuPanel.getTeamOne(), menuPanel.getTeamTwo(),
-            menuPanel.getMatchMode(), menuPanel.getSelectedLimit());
+            menuPanel.getMatchMode(), menuPanel.getSelectedLimit(), game);
         gameRenderer = new GameRenderer(menuPanel.getStadium(),
             menuPanel.getTeamOne(), menuPanel.getTeamTwo());
 
@@ -52,6 +55,7 @@ public class DOPOsoccerGUI extends JFrame {
         cardLayout.show(screenContainer, GAME_SCREEN);
         gamePanel.requestFocusInWindow();
         startGameTimer();
+        menuPanel.setImprovementsEnabled(true);
         screenContainer.revalidate();
         screenContainer.repaint();
     }
@@ -76,7 +80,7 @@ public class DOPOsoccerGUI extends JFrame {
     private void showResults() {
         resultsPanel = new ResultsPanel(game,
             menuPanel.getTeamOne(), menuPanel.getTeamTwo(),
-            menuPanel.isCpuMode(), gameRenderer, this::returnToMenu);
+            menuPanel.isCpuMode(), gameRenderer, this::returnToMenu, this::goToImprovements);
         screenContainer.add(resultsPanel, RESULTS_SCREEN);
         cardLayout.show(screenContainer, RESULTS_SCREEN);
         screenContainer.revalidate();
@@ -87,6 +91,28 @@ public class DOPOsoccerGUI extends JFrame {
         stopGameTimer();
         cardLayout.show(screenContainer, MENU_SCREEN);
         menuPanel.requestFocusInWindow();
+    }
+
+    private void goToImprovements() {
+        openImprovements(RESULTS_SCREEN);
+    }
+
+    private void goToImprovementsFromMenu() {
+        if (game != null) openImprovements(MENU_SCREEN);
+    }
+
+    private void openImprovements(String returnScreen) {
+        improvementsReturnScreen = returnScreen;
+        if (improvementsPanel != null) screenContainer.remove(improvementsPanel);
+        improvementsPanel = new ImprovementsPanel(game, menuPanel.isCpuMode(), this::backToResults);
+        screenContainer.add(improvementsPanel, IMPROVEMENTS_SCREEN);
+        cardLayout.show(screenContainer, IMPROVEMENTS_SCREEN);
+        screenContainer.revalidate();
+        screenContainer.repaint();
+    }
+
+    private void backToResults() {
+        cardLayout.show(screenContainer, improvementsReturnScreen);
     }
 
     private void stopGameTimer() {

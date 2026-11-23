@@ -1,5 +1,9 @@
 package Domain;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +11,7 @@ import java.util.List;
  * Mantiene las reglas y el estado de un partido.
  * No recibe teclas ni coordina la actualización de los objetos: eso lo hace DOPOsoccer.
  */
-public class Partido {
+public class Partido implements Serializable {
 
     public enum Estado { JUGANDO, MUERTE_SUBITA, TERMINADO }
     public enum Modo { TIEMPO, GOLES }
@@ -30,11 +34,12 @@ public class Partido {
 
     private Estado estado = Estado.JUGANDO;
     private Jugador ganador;
-    private final long inicioNs;
+    private transient long inicioNs;
 
     private boolean pausado;
-    private long inicioPausaNs;
-    private long pausaAcumuladaNs;
+    private transient long inicioPausaNs;
+    private transient long pausaAcumuladaNs;
+    private long transcurridoGuardadoNs; // nanoTime no vale entre ejecuciones: se guarda el tiempo jugado
 
     public Partido(String pais1, String pais2) throws DopoSoccerException {
         this(pais1, pais2, Modo.TIEMPO, DURACION_DEFECTO_S);
@@ -124,6 +129,22 @@ public class Partido {
         perdedor.sumarPuntos(PUNTOS_PERDEDOR);
         ganador = ganadorPartido;
         estado = Estado.TERMINADO;
+    }
+
+    // ---------------- GUARDADO ----------------
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        long ahora = pausado ? inicioPausaNs : System.nanoTime();
+        transcurridoGuardadoNs = ahora - inicioNs - pausaAcumuladaNs;
+        out.defaultWriteObject();
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        long ahora = System.nanoTime();
+        inicioNs = ahora - transcurridoGuardadoNs;
+        pausaAcumuladaNs = 0;
+        inicioPausaNs = ahora;
     }
 
     // ---------------- GOLES ----------------

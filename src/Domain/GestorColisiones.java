@@ -1,7 +1,9 @@
 package Domain;
 
+import java.io.Serializable;
+
 /** Coordina las distintas reglas de colision del partido. */
-public final class GestorColisiones {
+public final class GestorColisiones implements Serializable {
 
     private final Colisiones[] colisiones = {
             new ColisionJugadorBalon(),

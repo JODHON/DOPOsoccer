@@ -43,7 +43,7 @@ public class MenuPanel extends JPanel {
     private final JLabel secondTeamTitle = new JLabel("JUGADOR 2");
     private final MatchSettingsPanel settingsPanel;
 
-    public MenuPanel(Runnable onStart) {
+    public MenuPanel(Runnable onStart, Runnable onOpen) {
         setLayout(new BorderLayout());
         setBackground(MENU_BACKGROUND);
         setPreferredSize(new Dimension(1280, 720));
@@ -73,7 +73,7 @@ public class MenuPanel extends JPanel {
 
         settingsPanel = new MatchSettingsPanel(
             cpuMode -> secondTeamTitle.setText(cpuMode ? "CPU" : "JUGADOR 2"));
-        add(createBottomPanel(onStart), BorderLayout.SOUTH);
+        add(createBottomPanel(onStart, onOpen), BorderLayout.SOUTH);
     }
 
     private JPanel createSelector(String title, String[] options, String imageFolder,
@@ -156,21 +156,28 @@ public class MenuPanel extends JPanel {
             BorderFactory.createEmptyBorder(4, 4, 4, 4)));
     }
 
-    private JPanel createBottomPanel(Runnable onStart) {
+    private JPanel createBottomPanel(Runnable onStart, Runnable onOpen) {
         JPanel bottom = new JPanel();
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
         bottom.setOpaque(false);
         bottom.add(settingsPanel);
         bottom.add(Box.createVerticalStrut(10));
 
-        JButton startButton = new JButton("JUGAR");
-        startButton.setFont(new Font("Arial", Font.BOLD, 30));
-        startButton.setFocusPainted(false);
-        startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        startButton.addActionListener(event -> onStart.run());
-        bottom.add(startButton);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttons.setOpaque(false);
+        buttons.add(createBottomButton("JUGAR", onStart));
+        buttons.add(createBottomButton("ABRIR PARTIDA", onOpen));
+        bottom.add(buttons);
         bottom.add(Box.createVerticalStrut(15));
         return bottom;
+    }
+
+    private JButton createBottomButton(String text, Runnable action) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 30));
+        button.setFocusPainted(false);
+        button.addActionListener(event -> action.run());
+        return button;
     }
 
     public String getTeamOne() { return teamOne; }

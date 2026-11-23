@@ -1,8 +1,10 @@
 package Domain;
 
+import java.io.Serializable;
+
 import java.awt.Rectangle;
 
-public class Jugador {
+public class Jugador implements Serializable {
     private static final double GANANCIA_POR_GOL_RECIBIDO = 25; // 1/4 de la barra
     private static final double FUERZA_PATADA = 14.0;  // impulso al balon (fijo; kick escala el dano)
     private static final double COOLDOWN_PATADA = 30;  // frames (0.5 s a 60 fps)

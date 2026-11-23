@@ -1,8 +1,10 @@
 package Domain;
 
+import java.io.Serializable;
+
 import java.awt.Rectangle;
 
-public class Balon {
+public class Balon implements Serializable {
     private double rebote;
     private double xInicial;
     private double yInicial;

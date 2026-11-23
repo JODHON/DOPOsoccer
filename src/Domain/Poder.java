@@ -1,7 +1,9 @@
 package Domain;
 
+import java.io.Serializable;
 
-public abstract class Poder {
+
+public abstract class Poder implements Serializable {
 
     private static final double FACTOR_ESCALA_DAÑO=5;
 

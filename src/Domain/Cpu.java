@@ -1,12 +1,14 @@
 package Domain;
 
+import java.io.Serializable;
+
 import java.awt.Rectangle;
 
 /**
  * Base de los controladores de la CPU. Maneja a un jugador con las mismas acciones
  * que un humano (mover, saltar, patear, dash, poder); cada dificultad solo cambia la decision.
  */
-public abstract class Cpu {
+public abstract class Cpu implements Serializable {
 
     private static final double GRAVEDAD_BALON = 0.4;
     private static final double REBOTE_BALON = 0.75; // igual al de Partido

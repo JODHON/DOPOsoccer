@@ -1,11 +1,13 @@
 package Domain;
 
+import java.io.Serializable;
+
 import java.util.Collections;
 import java.util.List;
 
 
 
-public abstract class Efecto {
+public abstract class Efecto implements Serializable {
     private final String nombre;
     private double restante; // frames
 

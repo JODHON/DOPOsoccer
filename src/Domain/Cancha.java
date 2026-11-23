@@ -1,8 +1,10 @@
 package Domain;
 
+import java.io.Serializable;
+
 import java.awt.Rectangle;
 
-public class Cancha {
+public class Cancha implements Serializable {
     private double ancho;
     private double altura;
     private double x;

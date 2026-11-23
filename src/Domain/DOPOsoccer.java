@@ -1,16 +1,25 @@
 package Domain;
 
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 /**
  * Coordinador principal de la partida: recibe entradas, actualiza entidades
  * y solicita la comprobación de colisiones y del reloj.
  */
-public class DOPOsoccer {
+public class DOPOsoccer implements Serializable {
 
     private final Partido partido;
     private final GestorColisiones gestorColisiones;
     private final Cpu cpu; // null en modo 1 vs 1
+
+    private String estadio; // ambientación elegida; se guarda con la partida
 
     private boolean izquierda1;
     private boolean derecha1;
@@ -112,6 +121,44 @@ public class DOPOsoccer {
                 || codigo == KeyEvent.VK_UP || codigo == KeyEvent.VK_COMMA
                 || codigo == KeyEvent.VK_PERIOD || codigo == KeyEvent.VK_SLASH;
     }
+
+    // GUARDAR Y ABRIR
+
+    /** Guarda la partida completa (jugadores, balón, marcador, tiempo, mejoras y CPU). */
+    public void guardar(File archivo) throws DopoSoccerException {
+        if (archivo == null) throw new DopoSoccerException(DopoSoccerException.ARCHIVO_NULO);
+        try (ObjectOutputStream salida = new ObjectOutputStream(new FileOutputStream(archivo))) {
+            salida.writeObject(this);
+        } catch (IOException e) {
+            throw new DopoSoccerException(DopoSoccerException.ERROR_GUARDAR, e);
+        }
+    }
+
+    /** Abre una partida guardada. Queda en pausa para que el jugador se prepare. */
+    public static DOPOsoccer abrir(File archivo) throws DopoSoccerException {
+        if (archivo == null) throw new DopoSoccerException(DopoSoccerException.ARCHIVO_NULO);
+        try (ObjectInputStream entrada = new ObjectInputStream(new FileInputStream(archivo))) {
+            Object leido = entrada.readObject();
+            if (!(leido instanceof DOPOsoccer)) {
+                throw new DopoSoccerException(DopoSoccerException.ARCHIVO_INVALIDO);
+            }
+            DOPOsoccer juego = (DOPOsoccer) leido;
+            juego.soltarTeclas();
+            juego.partido.pausar();
+            return juego;
+        } catch (IOException | ClassNotFoundException | ClassCastException e) {
+            throw new DopoSoccerException(DopoSoccerException.ERROR_ABRIR, e);
+        }
+    }
+
+    private void soltarTeclas() {
+        izquierda1 = derecha1 = izquierda2 = derecha2 = false;
+        partido.getJugador().mover(0);
+        partido.getJugador2().mover(0);
+    }
+
+    public String getEstadio() { return estadio; }
+    public void setEstadio(String estadio) { this.estadio = estadio; }
 
     // PAUSA 
 

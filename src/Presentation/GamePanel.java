@@ -26,7 +26,7 @@ public class GamePanel extends JPanel {
     private boolean pauseKeyHeld;
 
     public GamePanel(DOPOsoccer game, GameRenderer renderer, boolean cpuMode,
-                     Runnable onReturnToMenu) {
+                     Runnable onReturnToMenu, Runnable onSave) {
         this.game = game;
         this.renderer = renderer;
         this.cpuMode = cpuMode;
@@ -34,13 +34,13 @@ public class GamePanel extends JPanel {
         setPreferredSize(new Dimension(1280, 720));
         setFocusable(true);
         setLayout(new GridBagLayout());
-        pausePanel = createPausePanel(onReturnToMenu);
+        pausePanel = createPausePanel(onReturnToMenu, onSave);
         pausePanel.setVisible(false);
         add(pausePanel);
         addKeyboardControls();
     }
 
-    private JPanel createPausePanel(Runnable onReturnToMenu) {
+    private JPanel createPausePanel(Runnable onReturnToMenu, Runnable onSave) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
@@ -64,6 +64,11 @@ public class GamePanel extends JPanel {
         panel.add(resumeButton);
         panel.add(Box.createVerticalStrut(14));
 
+        JButton saveButton = createPauseButton("GUARDAR PARTIDA");
+        saveButton.addActionListener(event -> onSave.run());
+        panel.add(saveButton);
+        panel.add(Box.createVerticalStrut(14));
+
         JButton menuButton = createPauseButton("VOLVER AL MENÚ");
         menuButton.addActionListener(event -> onReturnToMenu.run());
         panel.add(menuButton);
@@ -75,7 +80,7 @@ public class GamePanel extends JPanel {
         button.setFont(new Font("Arial", Font.BOLD, 26));
         button.setFocusable(false);
         button.setAlignmentX(CENTER_ALIGNMENT);
-        Dimension size = new Dimension(320, 52);
+        Dimension size = new Dimension(360, 52);
         button.setPreferredSize(size);
         button.setMaximumSize(size);
         return button;

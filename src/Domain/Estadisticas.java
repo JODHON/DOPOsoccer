@@ -1,10 +1,12 @@
 package Domain;
 
+import java.io.Serializable;
+
 /**
  * Guarda cuantos puntos de mejora tiene cada stat y calcula los valores derivados.
  * Cada punto de mejora suma 10 % del valor BASE. El precio se duplica con cada mejora (500, 1000, 2000...).
  */
-public class Estadisticas {
+public class Estadisticas implements Serializable {
     public enum Stat { SPEED, KICK, JUMP, SURVIVAL }
 
     public static final int NIVEL_MAX = 10;

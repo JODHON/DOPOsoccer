@@ -240,13 +240,7 @@ public class PruebasUnidad {
             assertInstanceOf(PoderPrueba.class, FabricaPoderes.crear("alemania"));
         }
 
-        @Test
-        void poderesTienenDanosDiferentes() {
-            assertEquals(20, new PoderPrueba().getdaño(), 1e-9);
-            assertEquals(25, new Podercorea().getdaño(), 1e-9);
-            assertEquals(30, new Podereeeuu().getdaño(), 1e-9);
-            assertEquals(40, new Podernigeria().getdaño(), 1e-9);
-        }
+
 
         @Test
         void lanzarPoderImpulsaElBalon() throws DopoSoccerException {

@@ -8,6 +8,7 @@ public class DopoSoccerException extends Exception {
     public static final String STAT_NULA="La estadística no puede ser nula";
     public static final String STAT_AL_MAXIMO="La estadística ya está en el nivel máximo";
     public static final String PUNTOS_INSUFICIENTES="Puntos insuficientes para la mejora";
+    public static final String DIFICULTAD_NULA="La dificultad de la CPU no puede ser nula";
 
     public DopoSoccerException(String mensaje) {
         super(mensaje);

@@ -10,6 +10,7 @@ public class DOPOsoccer {
 
     private final Partido partido;
     private final GestorColisiones gestorColisiones;
+    private final Cpu cpu; // null en modo 1 vs 1
 
     private boolean izquierda1;
     private boolean derecha1;
@@ -24,12 +25,19 @@ public class DOPOsoccer {
         this(pais1, pais2, modo, limite, null);
     }
 
-    /** anterior: partida previa de la que se conservan puntos y mejoras (puede ser null). */
-    public DOPOsoccer(String pais1, String pais2, Partido.Modo modo, int limite, DOPOsoccer anterior) {
+    /** dificultad == null: 1 vs 1. Si no, el jugador 2 lo controla la CPU. */
+    public DOPOsoccer(String pais1, String pais2, Partido.Modo modo, int limite, Dificultad dificultad) {
+        this(pais1, pais2, modo, limite, dificultad, null);
+    }
+
+    /** anterior: partida previa cuyos puntos y mejoras se conservan (puede ser null). */
+    public DOPOsoccer(String pais1, String pais2, Partido.Modo modo, int limite,
+                      Dificultad dificultad, DOPOsoccer anterior) {
         try {
             partido = new Partido(pais1, pais2, modo, limite,
-                anterior == null ? null : anterior.partido);
-        } 
+                    anterior == null ? null : anterior.partido);
+            cpu = (dificultad == null) ? null : FabricaCpu.crear(dificultad, partido);
+        }
         catch (DopoSoccerException e) {
             throw new RuntimeException(e);
         }
@@ -39,6 +47,8 @@ public class DOPOsoccer {
     /** Ejecuta un ciclo de juego. La GUI lo llama desde su Timer. */
     public void actualizarJuego() {
         if (partido.getEstado() == Partido.Estado.TERMINADO || partido.isPausado()) return;
+
+        if (cpu != null) cpu.actualizar();
 
         partido.getJugador().actualizar(1.0);
         partido.getJugador2().actualizar(1.0);
@@ -51,6 +61,8 @@ public class DOPOsoccer {
     // TECLADO 
 
     public void teclaPresionada(int codigo) {
+        if (cpu != null && esTeclaJugador2(codigo)) return; // la CPU controla al jugador 2
+
         switch (codigo) {
             case KeyEvent.VK_A: izquierda1 = true; break;
             case KeyEvent.VK_D: derecha1 = true; break;
@@ -90,7 +102,15 @@ public class DOPOsoccer {
 
     private void actualizarMovimiento() {
         partido.getJugador().mover((derecha1 ? 1 : 0) - (izquierda1 ? 1 : 0));
-        partido.getJugador2().mover((derecha2 ? 1 : 0) - (izquierda2 ? 1 : 0));
+        if (cpu == null) {
+            partido.getJugador2().mover((derecha2 ? 1 : 0) - (izquierda2 ? 1 : 0));
+        }
+    }
+
+    private boolean esTeclaJugador2(int codigo) {
+        return codigo == KeyEvent.VK_LEFT || codigo == KeyEvent.VK_RIGHT
+                || codigo == KeyEvent.VK_UP || codigo == KeyEvent.VK_COMMA
+                || codigo == KeyEvent.VK_PERIOD || codigo == KeyEvent.VK_SLASH;
     }
 
     // PAUSA 
@@ -98,6 +118,7 @@ public class DOPOsoccer {
     public void pausar() { partido.pausar(); }
     public void reanudar() { partido.reanudar(); }
     public boolean isPausado() { return partido.isPausado(); }
+    public boolean isModoCpu() { return cpu != null; }
 
     // CONSULTAS PARA LA GUI 
 

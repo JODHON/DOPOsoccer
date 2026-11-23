@@ -1,17 +1,16 @@
 package Presentation;
 
+import Domain.Dificultad;
 import Domain.Partido;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.FlowLayout;
-import java.awt.GridLayout;
+import java.awt.Font;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -37,6 +36,7 @@ public class MatchSettingsPanel extends JPanel {
         private final JToggleButton cpuButton;
         private final JToggleButton timeButton;
         private final JToggleButton goalsButton;
+        private final JComboBox<Dificultad> difficultyBox;
     
         private final Consumer<Boolean> onCpuModeChanged;
     
@@ -57,6 +57,20 @@ public class MatchSettingsPanel extends JPanel {
             oneVsOneButton.addActionListener(event -> selectCpuMode(false));
             cpuButton.addActionListener(event -> selectCpuMode(true));
             JPanel gameModeGroup = createOptionGroup("MODO DE JUEGO", oneVsOneButton, cpuButton);
+
+            difficultyBox = new JComboBox<>(Dificultad.values());
+            difficultyBox.setFont(new Font("Arial", Font.BOLD, 16));
+            difficultyBox.setFocusable(false);
+            difficultyBox.setEnabled(false);
+            JLabel difficultyLabel = new JLabel("DIFICULTAD");
+            difficultyLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            difficultyLabel.setForeground(Color.WHITE);
+            JPanel difficultyRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+            difficultyRow.setOpaque(false);
+            difficultyRow.add(difficultyLabel);
+            difficultyRow.add(difficultyBox);
+            gameModeGroup.add(Box.createVerticalStrut(6));
+            gameModeGroup.add(difficultyRow);
     
             timeButton = createModeButton("POR TIEMPO");
             goalsButton = createModeButton("POR GOLES");
@@ -99,6 +113,7 @@ public class MatchSettingsPanel extends JPanel {
         public Partido.Modo getMatchMode() { return matchMode; }
         public int getTimeLimitSeconds() { return timeLimitSeconds; }
         public int getGoalLimit() { return goalLimit; }
+        public Dificultad getDifficulty() { return (Dificultad) difficultyBox.getSelectedItem(); }
     
         private JPanel createOptionGroup(String title, JToggleButton first, JToggleButton second) {
             JPanel group = new JPanel();
@@ -132,6 +147,7 @@ public class MatchSettingsPanel extends JPanel {
     
         private void selectCpuMode(boolean selected) {
             cpuMode = selected;
+            difficultyBox.setEnabled(selected);
             oneVsOneButton.setSelected(!selected);
             cpuButton.setSelected(selected);
             updateBorder(oneVsOneButton);

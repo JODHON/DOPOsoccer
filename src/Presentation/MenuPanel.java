@@ -25,7 +25,7 @@ import javax.swing.JToggleButton;
 
 /** Main menu. Stores the selected teams, stadium and match settings. */
 public class MenuPanel extends JPanel {
-    private static final String[] TEAMS = {"alemania", "corea", "camerun", "nigeria", "usa"};
+    private static final String[] TEAMS = { "corea", "camerun", "nigeria", "usa"};
     private static final String[] STADIUMS = {
         "alemania", "corea", "camerun", "nigeria", "usa", "bogota", "bogota_es_roja"
     };
